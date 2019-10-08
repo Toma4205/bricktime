@@ -76,7 +76,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   _updateIsAdmin(String adminId){
-    if(myuser.id == adminId)
+    if(adminId.contains(myuser.id))
       {
         setState(() {
           isAdmin = true;
