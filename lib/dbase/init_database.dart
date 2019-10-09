@@ -13,21 +13,21 @@ void init_db_teams(){
   {
     'city': 'Boston',
     'name': 'Celtics',
-    'conference': 'Est',
+    'conference': 'East',
   });
 
   FirebaseDatabase.instance.reference().child('teams').child('BNETS').set(
       {
         'city': 'Brooklyn',
         'name': 'Nets',
-        'conference': 'Est',
+        'conference': 'East',
       });
 
   FirebaseDatabase.instance.reference().child('teams').child('CHORNETS').set(
       {
         'city': 'Charlotte',
         'name': 'Hornets',
-        'conference': 'West',
+        'conference': 'East',
       });
 
   FirebaseDatabase.instance.reference().child('teams').child('CBULLS').set(
@@ -83,7 +83,7 @@ void init_db_teams(){
       {
         'city': 'Indiana',
         'name': 'Pacers',
-        'conference': 'West',
+        'conference': 'East',
       });
 
   FirebaseDatabase.instance.reference().child('teams').child('LCLIPPERS').set(

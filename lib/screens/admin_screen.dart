@@ -12,6 +12,9 @@ import 'package:bricktime/model/user.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/screens/my_pronostics_screen.dart';
+import 'package:bricktime/dbase/teams_actions.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+
 
 class AdminScreen extends StatefulWidget{
   AdminScreen({Key key, this.auth}) : super(key:key);
@@ -23,14 +26,26 @@ class AdminScreen extends StatefulWidget{
 
 class _AdminScreenState extends State<AdminScreen>{
   final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
+  final _formKeyNewPlayoffs = GlobalKey<FormState>();
+
+
   final double _imageHeight = 256.0;
   final User myuser = User(id: 'id', pseudo: 'pseudo', level: 'level', lastConnexion: 'lastConnexion');
+
+  List<String> teamsE = ["East Team"];
+  List<String> teamsW = ["West Team"];
 
   ListModel listModel;
   bool showOnlyCompleted = false;
   bool isAdmin = false;
+  bool _isShowButton = false;
+  bool _isShowForm = false;
 
   String playoffYear = DateTime.now().year.toString();
+  List<DateTime> datesLimites = new List(16);
+  List<Color>  datesColors = new List(16);
+  List<String> selectedTeamsEast = new List(8);
+  List<String> selectedTeamsWest = new List(8);
 
 
   List<CustomPopupMenu> choices = <CustomPopupMenu>[
@@ -69,6 +84,16 @@ class _AdminScreenState extends State<AdminScreen>{
     super.initState();
     listModel = new ListModel(_listKey, pronos);
 
+    getTeams('East').then((team){
+      teamsE.clear();
+      teamsE.addAll(team);
+    });
+
+    getTeams('West').then((team){
+      teamsW.clear();
+      teamsW.addAll(team);
+    });
+
     widget.auth.getCurrentUser().then((user){
       getUserInfo(user).then(_updateUserInfo);
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
@@ -101,6 +126,43 @@ class _AdminScreenState extends State<AdminScreen>{
     });
   }
 
+  void _selectDateLimit(int gameNumber) {
+
+    DatePicker.showDateTimePicker(context,
+        showTitleActions: true,
+        onChanged: (date) {
+
+
+        }, onConfirm: (date) {
+          if(date.compareTo(DateTime.now())>0) {
+            setState(() {
+              datesLimites[gameNumber] = date;
+              datesColors[gameNumber] = Colors.green;
+              print(datesLimites.toString());
+            });
+          }else{
+            setState(() {
+              datesLimites[gameNumber] = null;
+              datesColors[gameNumber] = null;
+              print(datesLimites.toString());
+            });
+          }
+        }, currentTime: DateTime.now(), locale: LocaleType.fr);
+  }
+
+  String _checkLaunch(){
+    String error = null;
+    if(selectedTeamsEast.contains(null) || selectedTeamsWest.contains(null)){
+      error = "All the 16 teams are not filled";
+    }
+
+    if(datesColors.contains(null)){
+      error = "All the 8 deadline are not OK";
+    }
+    
+    return error;
+  }
+
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -110,7 +172,7 @@ class _AdminScreenState extends State<AdminScreen>{
           _buildTopHeader(),
           //_buildProfileRow(),
           _buildBottomPart(),
-          _buildFilterButton(),
+          //_buildFilterButton(),
         ],
       ),
     );
@@ -194,7 +256,6 @@ class _AdminScreenState extends State<AdminScreen>{
   }
 
 
-
   Widget _buildProfileRow() {
     return new Padding(
       padding: new EdgeInsets.only(left: 16.0, top: _imageHeight / 2.5),
@@ -235,20 +296,182 @@ class _AdminScreenState extends State<AdminScreen>{
 
   Widget _buildBottomPart() {
     return new Padding(
-      padding: new EdgeInsets.only(top: 90),
+      padding: new EdgeInsets.only(top: 100, left: 10),
       child: new Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _buildMyTasksHeader(),
-          new RaisedButton(
-            onPressed: null,
-            child: Text('TEST FOOT', style: TextStyle(color: Colors.deepOrange),),
-          ),
-          _buildTasksList(),
+          _newPlayoffsLauncher(),
+          _buildFormPlayoffs(),
+          //_buildTasksList(),
         ],
       ),
     );
   }
+
+  Widget _buildFormPlayoffsRow(String conf, int teamA, int teamB, int serieNumber){
+    return new Padding(
+      padding: EdgeInsets.all(0.0),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: DropdownButtonFormField<String>(
+                value: conf == "E" ? selectedTeamsEast[teamA-1] : selectedTeamsWest[teamA-1],
+                hint: Text("Team "+teamA.toString()+" : "),
+                items: conf == "E" ? teamsE.map((label) => DropdownMenuItem(
+                            child: Text(label),
+                            value: label,)).toList() :
+                teamsW.map((label) => DropdownMenuItem(
+                            child: Text(label),
+                            value: label,)).toList(),
+                onChanged: (String value) {
+                  setState(() {
+                    conf == "E" ? selectedTeamsEast[teamA-1]=value : selectedTeamsWest[teamA-1]=value;
+                  });
+                }
+            ),
+          ),
+          Padding(
+              padding: EdgeInsets.all(0.0),
+              child: Column(
+                children: <Widget>[
+                  IconButton(
+                    icon: Icon(Icons.timer, color: (datesColors[serieNumber] == null ? Colors.deepOrange : datesColors[serieNumber]), size: 20),
+                    onPressed: (){
+                      _selectDateLimit(serieNumber);
+                    },
+                  ),
+                  Text(datesLimites[serieNumber] == null ? '-' :
+                  datesLimites[serieNumber].day.toString()+"/"+
+                      datesLimites[serieNumber].month.toString()+" "+
+                      datesLimites[serieNumber].hour.toString()+":"+
+                      datesLimites[serieNumber].hour.toString(),
+                    style: TextStyle(fontSize: 10),)
+                ],
+              )
+          ),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+                value: conf == "E" ? selectedTeamsEast[teamB-1] : selectedTeamsWest[teamB-1],
+                hint: Text("Team "+teamB.toString()+" : "),
+                items: conf == "E" ? teamsE.map((label) => DropdownMenuItem(
+                  child: Text(label),
+                  value: label,)).toList() :
+                teamsW.map((label) => DropdownMenuItem(
+                  child: Text(label),
+                  value: label,)).toList(),
+                onChanged: (String value) {
+                  setState(() {
+                    conf == "E" ? selectedTeamsEast[teamB-1]=value : selectedTeamsWest[teamB-1]=value;
+                  });
+                }
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _buildFormPlayoffs(){
+    if(_isShowForm){
+      return new Expanded(
+        child: Form(
+          key: _formKeyNewPlayoffs,
+          child: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text("Eastern Conference", style: TextStyle(fontWeight: FontWeight.bold),),
+                ),
+                Divider(height: 2, thickness: 2,),
+                _buildFormPlayoffsRow("E",1,8,0),
+                _buildFormPlayoffsRow("E",4,5,1),
+                _buildFormPlayoffsRow("E",3,6,2),
+                _buildFormPlayoffsRow("E",2,7,3),
+                Divider(height: 2, thickness: 2,),
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text("Western Conference", style: TextStyle(fontWeight: FontWeight.bold),),
+                ),
+                Divider(height: 2, thickness: 2,),
+                _buildFormPlayoffsRow("W",1,8,4),
+                _buildFormPlayoffsRow("W",4,5,5),
+                _buildFormPlayoffsRow("W",3,6,6),
+                _buildFormPlayoffsRow("W",2,7,7),
+                Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: RaisedButton(
+                      child: Text("Launch"),
+                      onPressed: () {
+                        if(_formKeyNewPlayoffs.currentState.validate()) {
+                          _formKeyNewPlayoffs.currentState.save();
+                          //print(selectedTeam1E+" vs "+selectedTeam8E);
+                          
+                          String checkError = _checkLaunch();
+                          if(checkError == null){
+                            //FORMULAIRE VALIDE
+                            print('OK Launch formulaire rapide');
+                          }else{
+                           showDialog(
+                             context: context,
+                             builder: (BuildContext context){
+                               return AlertDialog(
+                                 title: new Text("Error while launching"),
+                                 content: new Text(checkError),
+                                 actions: <Widget>[
+                                   // usually buttons at the bottom of the dialog
+                                   new FlatButton(
+                                     child: new Text("Close"),
+                                     onPressed: () {
+                                       Navigator.of(context).pop();
+                                     },
+                                   ),
+                                 ],
+                               );
+                             }
+                           );
+                          }
+                        }
+                      },
+                    )
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }else{
+      return Padding(padding: EdgeInsets.all(0),);
+    }
+  }
+
+  Widget _newPlayoffsLauncher(){
+    if(_isShowButton){
+      return Text("Playoffs in progress ...");
+    }else {
+      return  RaisedButton(
+        onPressed: () {
+          setState(() {
+            _isShowForm = true;
+            _isShowButton = false;
+          });
+        },
+        elevation: 5,
+        color: Colors.blueGrey,
+        child: Text('Launch ' + (DateTime
+            .now()
+            .month >= 7 ? (DateTime
+            .now()
+            .year + 1).toString() : DateTime
+            .now()
+            .year
+            .toString()) + ' Playoffs Competition',
+          style: TextStyle(color: Colors.white),),
+      );
+    }
+  }
+
 
   Widget _buildTasksList() {
     return new Expanded(
@@ -273,7 +496,7 @@ class _AdminScreenState extends State<AdminScreen>{
         children: <Widget>[
           new Text(
             'ADMIN',
-            style: new TextStyle(fontSize: 34.0),
+            style: new TextStyle(fontSize: 24.0),
           ),
         ],
       ),
