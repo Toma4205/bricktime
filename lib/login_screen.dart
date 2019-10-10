@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-
+    //init_db_constantes();
     widget.auth.getCurrentUser().then((user) {
       if (user != null) {
         print('INITSTATE Current user is : '+user.toString());

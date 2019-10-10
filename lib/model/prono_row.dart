@@ -24,13 +24,15 @@ class PronoRowState extends State<PronoRow>{
       return "4-2";
     }else if(value ==3){
       return "4-3";
-    }else if(value ==4){
-      return "3-4";
+    }else if(value ==4) {
+      return "waiting for decision";
     }else if(value ==5){
-      return "2-4";
+      return "3-4";
     }else if(value ==6){
+      return "2-4";
+    }else if(value ==7){
       return "1-4";
-    }else if(value >=7) {
+    }else if(value >=8) {
       return "0-4";
     }
   }
@@ -96,15 +98,15 @@ class PronoRowState extends State<PronoRow>{
                     new Slider(
                       value: _value,
                       min: 0,
-                      max: 7,
+                      max: 8,
                       activeColor: Colors.deepOrange,
                       inactiveColor: Colors.grey,
                       label: getLabel(_value),
-                      divisions: 7,
+                      divisions: 8,
                       onChanged: widget.prono.date_limit.compareTo(DateTime.now()) < 0 ? null : (value){
                         setState(() {
                           _value = value;
-                          _winnerScore = (value >= 4 ? widget.prono.teamB :  widget.prono.teamA) + " win "+getLabel(value);
+                          _winnerScore = (value > 4 ? widget.prono.teamB+" win " :  (value < 4 ? widget.prono.teamA+" win " : ""))+getLabel(value);
                         });
                       },
                     ),

@@ -95,6 +95,10 @@ class _AdminScreenState extends State<AdminScreen>{
       teamsW.addAll(team);
     });
 
+    isCompetitionInProgress().then((status){
+      _isShowButton = status;
+    });
+
     widget.auth.getCurrentUser().then((user){
       getUserInfo(user).then(_updateUserInfo);
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
@@ -410,6 +414,8 @@ class _AdminScreenState extends State<AdminScreen>{
                           if(checkError == null){
                             //FORMULAIRE VALIDE
                             print('OK Launch formulaire rapide');
+                            //initCompetitionModel
+
                           }else{
                            showDialog(
                              context: context,

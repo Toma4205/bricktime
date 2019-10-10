@@ -401,4 +401,9 @@ void init_db_constantes(){
       {
         'year_actual_playoff': 2019,
       });
+
+  FirebaseDatabase.instance.reference().child('constantes').update(
+      {
+        'is_competition_in_progress': false,
+      });
 }
