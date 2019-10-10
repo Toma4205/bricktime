@@ -37,21 +37,21 @@ packages:
     source: hosted
     version: "0.1.2"
   firebase_auth:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: firebase_auth
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.11.1+12"
   firebase_core:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: firebase_core
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.4.0+9"
   firebase_database:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: firebase_database
       url: "https://pub.dartlang.org"
@@ -70,7 +70,7 @@ packages:
     source: hosted
     version: "1.2.6"
   flutter_facebook_login:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: flutter_facebook_login
       url: "https://pub.dartlang.org"
@@ -82,14 +82,14 @@ packages:
     source: sdk
     version: "0.0.0"
   google_sign_in:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: google_sign_in
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.7"
   http:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: http
       url: "https://pub.dartlang.org"

@@ -25,10 +25,6 @@ dependencies:
   cupertino_icons: ^0.1.2
   flutter_datetime_picker: ^1.2.6
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
   # Add the dependency for the Firebase Core Flutter SDK
   firebase_core: ^0.4.0+1
 
@@ -40,6 +36,12 @@ dev_dependencies:
   google_sign_in: ^4.0.4
 
   http: ^0.12.0+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec

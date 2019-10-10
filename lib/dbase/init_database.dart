@@ -2,210 +2,210 @@ import 'package:firebase_database/firebase_database.dart';
 
 
 void init_db_teams(){
-  FirebaseDatabase.instance.reference().child('teams').child('AHAWKS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('AHAWKS').update(
   {
     'city': 'Atlanta',
     'name': 'Hawks',
     'conference': 'East',
   });
 
-  FirebaseDatabase.instance.reference().child('teams').child('BCELTICS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('BCELTICS').update(
   {
     'city': 'Boston',
     'name': 'Celtics',
     'conference': 'East',
   });
 
-  FirebaseDatabase.instance.reference().child('teams').child('BNETS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('BNETS').update(
       {
         'city': 'Brooklyn',
         'name': 'Nets',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('CHORNETS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('CHORNETS').update(
       {
         'city': 'Charlotte',
         'name': 'Hornets',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('CBULLS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('CBULLS').update(
       {
         'city': 'Chicago',
         'name': 'Bulls',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('CCAVALIERS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('CCAVALIERS').update(
       {
         'city': 'Cleveland',
         'name': 'Cavaliers',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('DMAVERICKS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('DMAVERICKS').update(
       {
         'city': 'Dallas',
         'name': 'Mavericks',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('DNUGGETS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('DNUGGETS').update(
       {
         'city': 'Denver',
         'name': 'Nuggets',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('DPISTONS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('DPISTONS').update(
       {
         'city': 'Detroit',
         'name': 'Pistons',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('GWARRIORS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('GWARRIORS').update(
       {
         'city': 'Golden State',
         'name': 'Warriors',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('HROCKETS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('HROCKETS').update(
       {
         'city': 'Houston',
         'name': 'Rockets',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('IPACERS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('IPACERS').update(
       {
         'city': 'Indiana',
         'name': 'Pacers',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('LCLIPPERS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('LCLIPPERS').update(
       {
         'city': 'Los Angeles',
         'name': 'Clippers',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('LLAKERS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('LLAKERS').update(
       {
         'city': 'Los Angeles',
         'name': 'Lakers',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('MGRIZZLIES').set(
+  FirebaseDatabase.instance.reference().child('teams').child('MGRIZZLIES').update(
       {
         'city': 'Memphis',
         'name': 'Grizzlies',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('MHEAT').set(
+  FirebaseDatabase.instance.reference().child('teams').child('MHEAT').update(
       {
         'city': 'Miami',
         'name': 'Heat',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('MBUCKS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('MBUCKS').update(
       {
         'city': 'Milwaukee',
         'name': 'Bucks',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('MTIMBERWOLVES').set(
+  FirebaseDatabase.instance.reference().child('teams').child('MTIMBERWOLVES').update(
       {
         'city': 'Minnesota',
         'name': 'Timberwolves',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('NPELICANS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('NPELICANS').update(
       {
         'city': 'New Orleans',
         'name': 'Pelicans',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('NKNICKS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('NKNICKS').update(
       {
         'city': 'New York',
         'name': 'Knicks',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('OTHUNDER').set(
+  FirebaseDatabase.instance.reference().child('teams').child('OTHUNDER').update(
       {
         'city': 'Oklahoma City',
         'name': 'Thunder',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('OMAGIC').set(
+  FirebaseDatabase.instance.reference().child('teams').child('OMAGIC').update(
       {
         'city': 'Orlando',
         'name': 'Magic',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('P76ERS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('P76ERS').update(
       {
         'city': 'Philadelphia',
         'name': '76ers',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('PSUNS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('PSUNS').update(
       {
         'city': 'Phoenix',
         'name': 'Suns',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('PBLAZERS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('PBLAZERS').update(
       {
         'city': 'Portland Trail',
         'name': 'Blazers',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('SKINGS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('SKINGS').update(
       {
         'city': 'Sacramento',
         'name': 'Kings',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('SSPURS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('SSPURS').update(
       {
         'city': 'San Antonio',
         'name': 'Spurs',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('TRAPTORS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('TRAPTORS').update(
       {
         'city': 'Toronto',
         'name': 'Raptors',
         'conference': 'East',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('UJAZZ').set(
+  FirebaseDatabase.instance.reference().child('teams').child('UJAZZ').update(
       {
         'city': 'Utah',
         'name': 'Jazz',
         'conference': 'West',
       });
 
-  FirebaseDatabase.instance.reference().child('teams').child('WWIZARDS').set(
+  FirebaseDatabase.instance.reference().child('teams').child('WWIZARDS').update(
       {
         'city': 'Washington',
         'name': 'Wizards',

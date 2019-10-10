@@ -38,8 +38,10 @@ class _AdminScreenState extends State<AdminScreen>{
   ListModel listModel;
   bool showOnlyCompleted = false;
   bool isAdmin = false;
-  bool _isShowButton = false;
-  bool _isShowForm = false;
+
+
+  bool _isShowButton = true; //Sera une valeur issue de la BDD : on affiche le bouton uniquement si la compétition n'est pas lancée
+  bool _isShowForm = false; //Idem
 
   String playoffYear = DateTime.now().year.toString();
   List<DateTime> datesLimites = new List(16);
@@ -77,7 +79,6 @@ class _AdminScreenState extends State<AdminScreen>{
       );
     }
   }
-
 
   @override
   void initState() {
@@ -150,6 +151,19 @@ class _AdminScreenState extends State<AdminScreen>{
         }, currentTime: DateTime.now(), locale: LocaleType.fr);
   }
 
+  void _changeStateFilter(){
+    setState(() {
+      showOnlyCompleted = !showOnlyCompleted;
+    });
+    pronos.where((prono) => prono.completed).forEach((prono) {
+      if (showOnlyCompleted) {
+        listModel.removeAt(listModel.indexOf(prono));
+      } else {
+        listModel.insert(pronos.indexOf(prono), prono);
+      }
+    });
+  }
+
   String _checkLaunch(){
     String error = null;
     if(selectedTeamsEast.contains(null) || selectedTeamsWest.contains(null)){
@@ -170,7 +184,6 @@ class _AdminScreenState extends State<AdminScreen>{
         children: <Widget>[
           //_buildTimeline(),
           _buildTopHeader(),
-          //_buildProfileRow(),
           _buildBottomPart(),
           //_buildFilterButton(),
         ],
@@ -193,20 +206,6 @@ class _AdminScreenState extends State<AdminScreen>{
       //backgroundColor: _colorAnimation.value,
     );
   }
-
-  void _changeStateFilter(){
-    setState(() {
-      showOnlyCompleted = !showOnlyCompleted;
-    });
-    pronos.where((prono) => prono.completed).forEach((prono) {
-      if (showOnlyCompleted) {
-        listModel.removeAt(listModel.indexOf(prono));
-      } else {
-        listModel.insert(pronos.indexOf(prono), prono);
-      }
-    });
-  }
-
 
   Widget _buildTopHeader() {
     return new Padding(
@@ -255,7 +254,6 @@ class _AdminScreenState extends State<AdminScreen>{
     );
   }
 
-
   Widget _buildProfileRow() {
     return new Padding(
       padding: new EdgeInsets.only(left: 16.0, top: _imageHeight / 2.5),
@@ -300,10 +298,10 @@ class _AdminScreenState extends State<AdminScreen>{
       child: new Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _buildMyTasksHeader(),
-          _newPlayoffsLauncher(),
-          _buildFormPlayoffs(),
-          //_buildTasksList(),
+          _buildMyTasksHeader(), //Titre ADMIN
+          _newPlayoffsLauncher(), //Bouton d'initialisation ou texte d'information
+          _buildFormPlayoffs(), //Formulaire d'initialisation de toutes les équipes
+          //_buildTasksList(), //Liste des pronostics idem utilisateur mais en modifiable
         ],
       ),
     );
@@ -372,7 +370,7 @@ class _AdminScreenState extends State<AdminScreen>{
     );
   }
 
-  _buildFormPlayoffs(){
+  Widget _buildFormPlayoffs(){
     if(_isShowForm){
       return new Expanded(
         child: Form(
@@ -448,30 +446,52 @@ class _AdminScreenState extends State<AdminScreen>{
 
   Widget _newPlayoffsLauncher(){
     if(_isShowButton){
-      return Text("Playoffs in progress ...");
+      return Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+                Text("Playoffs in progress ..."),
+                Padding(padding: EdgeInsets.all(8)),
+                RaisedButton(
+                  onPressed: () => print("DELETE"),
+                  color: Colors.red,
+                  child: Text("Delete actual Playoffs", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),),
+                )
+            ]
+          ),
+          RaisedButton(
+            onPressed: () => print("CLEAR"),
+            color: Colors.purple,
+            child: Text("Clear Playoffs From Screens", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),),
+          ),
+        ],
+      );
     }else {
-      return  RaisedButton(
-        onPressed: () {
-          setState(() {
-            _isShowForm = true;
-            _isShowButton = false;
-          });
-        },
-        elevation: 5,
-        color: Colors.blueGrey,
-        child: Text('Launch ' + (DateTime
-            .now()
-            .month >= 7 ? (DateTime
-            .now()
-            .year + 1).toString() : DateTime
-            .now()
-            .year
-            .toString()) + ' Playoffs Competition',
+      return Column(
+        children: <Widget>[
+          RaisedButton(
+            onPressed: () {
+            setState(() {
+              _isShowForm = !_isShowForm;
+              _isShowButton = false;
+            });
+          },
+          elevation: 5,
+          color: Colors.blueGrey,
+          child: Text('Launch ' + (DateTime
+              .now()
+              .month >= 7 ? (DateTime
+              .now()
+              .year + 1).toString() : DateTime
+              .now()
+              .year
+              .toString()) + ' Playoffs Competition',
           style: TextStyle(color: Colors.white),),
+          ),
+        ],
       );
     }
   }
-
 
   Widget _buildTasksList() {
     return new Expanded(
