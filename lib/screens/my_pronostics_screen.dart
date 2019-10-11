@@ -11,7 +11,7 @@ import 'package:bricktime/dbase/user_actions.dart';
 import 'package:bricktime/model/user.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
-
+import 'package:bricktime/model/result.dart';
 
 class MyPronosticsScreen extends StatefulWidget {
   MyPronosticsScreen({Key key, this.auth}) : super(key: key);

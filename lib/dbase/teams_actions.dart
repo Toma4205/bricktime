@@ -16,7 +16,7 @@ Future<List<String>> getTeams(String conference) async {
 
     teamSnap.forEach((key, value) {
       if(value['conference'] == conference){
-        teams.add(value['city']);
+        teams.add(key);
       }
     });
 

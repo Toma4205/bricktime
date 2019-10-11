@@ -5,6 +5,7 @@ import 'package:bricktime/auth/authEmail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:bricktime/screens/my_pronostics_screen.dart';
 import 'package:bricktime/dbase/init_database.dart';
+import 'package:bricktime/dbase/results_actions.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -141,14 +142,16 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+
+
     //init_db_constantes();
     widget.auth.getCurrentUser().then((user) {
       if (user != null) {
         print('INITSTATE Current user is : '+user.toString());
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
-        );
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+          );
       }
     });
   }
