@@ -1,6 +1,8 @@
 import 'package:bricktime/model/result.dart';
+import 'package:bricktime/dbase/results_actions.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 
 class ResultRow extends StatefulWidget {
 
@@ -13,10 +15,9 @@ class ResultRow extends StatefulWidget {
 }
 
 class ResultRowState extends State<ResultRow>{
-  double _value = 2;
-  String _winnerScore = "Winner";
   int scoreA =0, scoreB=0;
   Color scoreColor = null;
+  bool switchStatus = false;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class ResultRowState extends State<ResultRow>{
       //_winnerScore = (_value >= 4 ? widget.prono.teamB :  widget.prono.teamA) + " win "+getLabel(_value);
       scoreA = widget.result.scoreA;
       scoreB = widget.result.scoreB;
+      switchStatus = widget.result.isDefinitive;
     });
     _updateScoreColor();
   }
@@ -34,9 +36,10 @@ class ResultRowState extends State<ResultRow>{
   //0 dom    et   1 ext
   _incrementScore(int domOuExt){
     setState(() {
-      domOuExt == 0 ? scoreA = min(scoreA+1,4) : scoreB = min(scoreB+1,4);
+      domOuExt == 0 ? scoreA =((scoreA == 3 && scoreB == 4) ? scoreA : min(scoreA+1,4)) : scoreB = ((scoreB ==3 && scoreA==4) ? scoreB : min(scoreB+1,4));
     });
     _updateScoreColor();
+    setResultToGame(scoreA, scoreB, widget.result.competition_level);
   }
 
   //0 dom    et   1 ext
@@ -45,6 +48,8 @@ class ResultRowState extends State<ResultRow>{
       domOuExt == 0 ? scoreA = max(scoreA-1,0) : scoreB = max(scoreB-1,0);
     });
     _updateScoreColor();
+    setResultToGame(scoreA, scoreB, widget.result.competition_level);
+
   }
 
   _updateScoreColor(){
@@ -55,6 +60,55 @@ class ResultRowState extends State<ResultRow>{
     }else{
       scoreColor = null;
     }
+  }
+
+  _updateSwitchStatus(bool status){
+    setState(() {
+      switchStatus = status;
+    });
+    setIsSerieDefinitive(widget.result.competition_level,status);
+  }
+
+  _passToNextSerie(){
+
+      setGoToNextSerie((scoreA == 4 ? widget.result.teamA:  widget.result.teamB), widget.result.competition_level);
+  }
+
+  void _selectDateLimit() {
+    isNextSerieOpen(widget.result.competition_level).then((status) {
+      if (status) {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text("Generate new serie"),
+                content: Text(
+                    "You are about to create a new serie. You need to set the first game date & time."),
+                actions: <Widget>[
+                  new FlatButton(onPressed: () => Navigator.of(context).pop(),
+                      child: new Text("Cancel")),
+                  new FlatButton(onPressed: () {
+                    Navigator.of(context).pop();
+                      DatePicker.showDateTimePicker(context,
+                          showTitleActions: true,
+                          onChanged: (date) {
+
+                          },
+                          onConfirm: (date) {
+                            if(date.compareTo(DateTime.now())>0) { //La date de la prochaine série doit forcément etre dans le futur
+                              setDateLimit(widget.result.competition_level, date);
+                            }
+                          },
+                          currentTime: DateTime.now(),
+                          locale: LocaleType.fr);
+                  },
+                      child: new Text("Ok")),
+                ],
+              );
+            }
+        );
+      }
+    });
   }
 
   @override
@@ -75,26 +129,8 @@ class ResultRowState extends State<ResultRow>{
                     new Row(
                       children: <Widget>[
                         new Padding(
-                          padding:
-                          new EdgeInsets.symmetric(horizontal: 2),
-                          child: new Column(
-                            children: <Widget>[
-                              IconButton(
-                                icon: Icon(Icons.add_circle,),
-                                padding: EdgeInsets.all(0),
-                                iconSize: 30,
-                                color: Colors.green,
-                                onPressed: () =>  _incrementScore(0),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.remove_circle),
-                                padding: EdgeInsets.all(0),
-                                iconSize: 30,
-                                color: Colors.red,
-                                onPressed: ()=> _decrementScore(0),
-                              ),
-                            ],
-                          ),
+                          padding: new EdgeInsets.symmetric(horizontal: 2),
+                          child: _buildPlusMinusButton(0),
                         ),
                         new Expanded(
                           child: Row(
@@ -115,6 +151,7 @@ class ResultRowState extends State<ResultRow>{
                             children: <Widget>[
                               _buildFutureScore(),
                               _buildInfoGame(),
+                              _buildSwitch(),
                             ],
                           ),
                         ),
@@ -133,26 +170,8 @@ class ResultRowState extends State<ResultRow>{
                           ),
                         ),
                         new Padding(
-                          padding:
-                          new EdgeInsets.symmetric(horizontal: 2),
-                          child: new Column(
-                            children: <Widget>[
-                              IconButton(
-                                icon: Icon(Icons.add_circle,),
-                                padding: EdgeInsets.all(0),
-                                iconSize: 30,
-                                color: Colors.green,
-                                onPressed: ()=> _incrementScore(1),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.remove_circle),
-                                padding: EdgeInsets.all(0),
-                                iconSize: 30,
-                                color: Colors.red,
-                                onPressed: ()=> _decrementScore(1),
-                              ),
-                            ],
-                          ),
+                          padding: new EdgeInsets.symmetric(horizontal: 2),
+                          child: _buildPlusMinusButton(1),
                         ),
                       ],
                     ),
@@ -197,6 +216,23 @@ class ResultRowState extends State<ResultRow>{
     );
   }
 
+  Widget _buildSwitch(){
+    if(scoreA == 4 || scoreB == 4){
+      return new Switch(
+          value: switchStatus,
+          onChanged: ((status) => {
+          _updateSwitchStatus(status),
+              if(status){
+                _passToNextSerie(),
+                _selectDateLimit(),
+              }
+          }),
+      );
+    }else{
+      return new Container(padding: EdgeInsets.all(0),);
+    }
+  }
+
   Widget _buildInfoGame(){
     if(scoreA != 4 && scoreB != 4){
       return Column(
@@ -211,6 +247,32 @@ class ResultRowState extends State<ResultRow>{
           Text(
             widget.result.competition_level,
             style: TextStyle(fontSize: 10),
+          ),
+        ],
+      );
+    }else{
+      return new Container(padding: EdgeInsets.all(0),);
+    }
+  }
+
+  //Dom 0 et Ext 1
+  Widget _buildPlusMinusButton(int domExt){
+    if(!switchStatus){
+      return new Column(
+        children: <Widget>[
+          IconButton(
+            icon: Icon(Icons.add_circle,),
+            padding: EdgeInsets.all(0),
+            iconSize: 30,
+            color: Colors.green,
+            onPressed: () =>  _incrementScore(domExt),
+          ),
+          IconButton(
+            icon: Icon(Icons.remove_circle),
+            padding: EdgeInsets.all(0),
+            iconSize: 30,
+            color: Colors.red,
+            onPressed: ()=> _decrementScore(domExt),
           ),
         ],
       );

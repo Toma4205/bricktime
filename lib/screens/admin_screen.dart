@@ -43,7 +43,6 @@ class _AdminScreenState extends State<AdminScreen>{
   List<String> teamsW = ["West Team"];
 
   ResultModel listModel;
-  bool showOnlyCompleted = false;
   bool isAdmin = false;
 
   String informationText ="";
@@ -54,7 +53,7 @@ class _AdminScreenState extends State<AdminScreen>{
   bool _isShowForm = false; //Idem
   bool _isShowResults = false;
 
-  String playoffYear = DateTime.now().year.toString();
+  String playoffYear;
   List<DateTime> datesLimites = new List(8);
   List<Color>  datesColors = new List(8);
   List<String> selectedTeamsEast = new List(8);
@@ -96,10 +95,12 @@ class _AdminScreenState extends State<AdminScreen>{
     super.initState();
 
     //listModel = new ResultModel(_listKey, widget.results);
+    /*
     getResultsFromCompetition(2019).then((result){
       _updatesResults(result);
       _updateListModel();
     });
+    */
 
     getTeams('East').then((team){
       teamsE.clear();
@@ -121,6 +122,8 @@ class _AdminScreenState extends State<AdminScreen>{
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
       getAdminId().then((_updateIsAdmin));
     });
+
+    _updateInitResults();
   }
 
   _updatesResults(List<Result> resultsList){
@@ -153,6 +156,12 @@ class _AdminScreenState extends State<AdminScreen>{
     });
   }
 
+  _updateIsShowResults(bool status){
+    setState(() {
+      _isShowResults = status;
+    });
+  }
+
   _updateIsAdmin(String adminId){
     if(myuser.id == adminId)
     {
@@ -182,6 +191,17 @@ class _AdminScreenState extends State<AdminScreen>{
     setState(() {
       playoffYear = year;
     });
+    _updateInitResults();
+  }
+
+  _updateInitResults(){
+    if(playoffYear != null && !_isShowButton){
+      getResultsFromCompetition(int.parse(playoffYear)).then((result){
+        _updatesResults(result);
+        _updateListModel();
+        _updateIsShowResults(true);
+      });
+    }
   }
 
   void _selectDateLimit(int gameNumber) {
@@ -208,21 +228,6 @@ class _AdminScreenState extends State<AdminScreen>{
         }, currentTime: DateTime.now(), locale: LocaleType.fr);
   }
 
-  void _changeStateFilter(){
-    setState(() {
-      showOnlyCompleted = !showOnlyCompleted;
-    });
-    /*
-    results.where((result) => result.completed).forEach((result) {
-      if (showOnlyCompleted) {
-        listModel.removeAt(listModel.indexOf(result));
-      } else {
-        listModel.insert(results.indexOf(result), result);
-      }
-    });
-    */
-  }
-
   String _checkLaunch(){
     String error = null;
     if(selectedTeamsEast.contains(null) || selectedTeamsWest.contains(null)){
@@ -244,27 +249,11 @@ class _AdminScreenState extends State<AdminScreen>{
           //_buildTimeline(),
           _buildTopHeader(),
           _buildBottomPart(),
-          //_buildFilterButton(),
         ],
       ),
     );
   }
 
-  Widget _buildFilterButton(){
-    return new Positioned(
-      top: _imageHeight - 40.0,
-      right: 10.0,
-      child: new FloatingActionButton(
-        onPressed: _changeStateFilter,
-        backgroundColor: Colors.deepOrange,
-        child: new  Icon(showOnlyCompleted ? Icons.list : Icons.filter_list,
-          color: Colors.white,
-          size: 26.0,
-        ),
-      ),
-      //backgroundColor: _colorAnimation.value,
-    );
-  }
 
   Widget _buildTopHeader() {
     return new Padding(
@@ -359,6 +348,7 @@ class _AdminScreenState extends State<AdminScreen>{
         children: <Widget>[
           _buildMyTasksHeader(), //Titre ADMIN
           _newPlayoffsLauncher(), //Bouton d'initialisation ou texte d'information
+          _buildInformationText(),
           _buildFormPlayoffs(), //Formulaire d'initialisation de toutes les équipes
           _buildTasksList(), //Liste des pronostics idem utilisateur mais en modifiable
         ],
@@ -473,7 +463,7 @@ class _AdminScreenState extends State<AdminScreen>{
                               _updateInformationText("Competition init : done");
                               _updateIsShowForm(false);
                               _updateIsShowButton(false);
-
+                              _updateInitResults();
                             }
                           }else{
                            showDialog(
@@ -509,11 +499,17 @@ class _AdminScreenState extends State<AdminScreen>{
     }
   }
 
+  Widget _buildInformationText(){
+    if(informationText != null){
+      return new Text(informationText, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),);
+    }else{
+      return Container(padding: EdgeInsets.all(0),);
+    }
+  }
+
   Widget _newPlayoffsLauncher(){
     if(!_isShowButton){
-      return Column(
-        children: <Widget>[
-          Row(
+      return Row(
             children: <Widget>[
                 Text("Playoffs in progress ..."),
                 Padding(padding: EdgeInsets.all(8)),
@@ -522,18 +518,13 @@ class _AdminScreenState extends State<AdminScreen>{
                     deleteCompetition(int.parse(playoffYear));
                     _updateInformationText("Competition removed");
                     _updateIsShowButton(true);
+                    _updateIsShowResults(false);
                   },
                   color: Colors.red,
                   child: Text("Delete actual Playoffs", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),),
                 )
             ]
-          ),
-          Text(
-            informationText,
-            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-          ),
-        ],
-      );
+          );
     }else {
       return Column(
         children: <Widget>[
@@ -590,13 +581,13 @@ class _AdminScreenState extends State<AdminScreen>{
 
   Widget _buildTasksList() {
     return new FutureBuilder<String>(builder: (context, snapshot) {
-      if (results.isNotEmpty) {
+      print(results.isNotEmpty.toString()+"  "+playoffYear.toString()+"   "+_isShowResults.toString());
+      if (results.isNotEmpty && playoffYear != null && _isShowResults) {
         return  new Expanded(
           child: new AnimatedList(
             initialItemCount: results.length,
             key: _listKey,
             itemBuilder: (context, index, animation) {
-              //print("buildTaskList : "+listModel[index].toString());
               return new ResultRow(
                 result: listModel[index],
                 animation: animation,
@@ -605,7 +596,7 @@ class _AdminScreenState extends State<AdminScreen>{
           ),
         );
       }
-      return  Text("no data yet");
+      return  Container(padding: EdgeInsets.all(0),);
     });
   }
 

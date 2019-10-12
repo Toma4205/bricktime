@@ -24,7 +24,7 @@ List<Result> modelInitAdminForm(int year, List<String> selectedEast, List<String
       teamB: i > 3 ? selectedWest[7-(i%4)] : selectedEast[7-i],
       scoreA: 0,
       scoreB: 0,
-      score_final: 4,
+        isDefinitive: false,
       first_game_date: time
     ));
     i++;
