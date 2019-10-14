@@ -11,6 +11,7 @@ import 'package:bricktime/dbase/user_actions.dart';
 import 'package:bricktime/model/user.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
+import 'package:bricktime/screens/ranking_screen.dart';
 
 
 class MyPronosticsScreen extends StatefulWidget {
@@ -59,6 +60,11 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
       );
     }else if(choice.title == 'My Pronostics'){
       //On est déjà dessus
+    } else if (choice.title == 'Ranking') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Ranking(auth: widget.auth)),
+      );
     }
   }
 
@@ -207,8 +213,6 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
       }
     );
   }
-
-
 
   Widget _buildProfileRow() {
     return new Padding(
