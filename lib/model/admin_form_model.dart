@@ -2,7 +2,7 @@ import 'package:bricktime/model/result.dart';
 import 'package:bricktime/dbase/results_actions.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:flutter/material.dart';
-
+import 'package:bricktime/dbase/user_prono_actions.dart';
 
 
 //Cette fonction retourne une liste de 8 Results dans l'ordre suivant :
@@ -31,6 +31,7 @@ List<Result> modelInitAdminForm(int year, List<String> selectedEast, List<String
   });
 
   setInitialCompetitionResults(year, listResults);
+  setInitialCompetitionPronos(year, listResults);
   setIsCompetitionInProgress(true);
 
   return listResults;
@@ -40,5 +41,6 @@ List<Result> modelInitAdminForm(int year, List<String> selectedEast, List<String
 deleteCompetition(int year){
 
   removeCompetitionResults(year);
+  removeCompetitionPronos(year);
   setIsCompetitionInProgress(false);
 }

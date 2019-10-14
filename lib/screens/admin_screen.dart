@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:bricktime/screens/animated_fab.dart';
-import 'package:bricktime/screens/diagonal_clipper.dart';
-import 'package:bricktime/model/initial_list.dart';
-import 'package:bricktime/model/list_model.dart';
-import 'package:bricktime/model/prono_row.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:bricktime/login_screen.dart';
 import 'package:bricktime/screens/custom_popup_menu.dart';
