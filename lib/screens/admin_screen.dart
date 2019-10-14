@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:bricktime/screens/animated_fab.dart';
-import 'package:bricktime/screens/diagonal_clipper.dart';
-import 'package:bricktime/model/initial_list.dart';
-import 'package:bricktime/model/list_model.dart';
-import 'package:bricktime/model/prono_row.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:bricktime/login_screen.dart';
 import 'package:bricktime/screens/custom_popup_menu.dart';
@@ -13,12 +8,19 @@ import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/screens/my_pronostics_screen.dart';
 import 'package:bricktime/dbase/teams_actions.dart';
+import 'package:bricktime/dbase/results_actions.dart';
+import 'package:bricktime/model/admin_form_model.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:bricktime/screens/ranking_screen.dart';
+import 'package:bricktime/model/result.dart';
+import 'package:bricktime/model/result_model.dart';
+import 'package:bricktime/model/result_row.dart';
+
+//import 'package:bricktime/model/initial_result.dart';
 
 
 class AdminScreen extends StatefulWidget{
-  AdminScreen({Key key, this.auth}) : super(key:key);
+  AdminScreen({Key key, this.auth,}) : super(key:key);
   final BaseAuth auth;
 
    @override
@@ -36,17 +38,20 @@ class _AdminScreenState extends State<AdminScreen>{
   List<String> teamsE = ["East Team"];
   List<String> teamsW = ["West Team"];
 
-  ListModel listModel;
-  bool showOnlyCompleted = false;
+  ResultModel listModel;
   bool isAdmin = false;
+
+  String informationText ="";
+  List<Result> results = new List();
 
 
   bool _isShowButton = true; //Sera une valeur issue de la BDD : on affiche le bouton uniquement si la compétition n'est pas lancée
   bool _isShowForm = false; //Idem
+  bool _isShowResults = false;
 
-  String playoffYear = DateTime.now().year.toString();
-  List<DateTime> datesLimites = new List(16);
-  List<Color>  datesColors = new List(16);
+  String playoffYear;
+  List<DateTime> datesLimites = new List(8);
+  List<Color>  datesColors = new List(8);
   List<String> selectedTeamsEast = new List(8);
   List<String> selectedTeamsWest = new List(8);
 
@@ -88,7 +93,14 @@ class _AdminScreenState extends State<AdminScreen>{
   @override
   void initState() {
     super.initState();
-    listModel = new ListModel(_listKey, pronos);
+
+    //listModel = new ResultModel(_listKey, widget.results);
+    /*
+    getResultsFromCompetition(2019).then((result){
+      _updatesResults(result);
+      _updateListModel();
+    });
+    */
 
     getTeams('East').then((team){
       teamsE.clear();
@@ -101,13 +113,52 @@ class _AdminScreenState extends State<AdminScreen>{
     });
 
     isCompetitionInProgress().then((status){
-      _isShowButton = status;
+      _isShowButton = !status;
+      _isShowResults = status;
     });
 
     widget.auth.getCurrentUser().then((user){
       getUserInfo(user).then(_updateUserInfo);
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
       getAdminId().then((_updateIsAdmin));
+    });
+
+    _updateInitResults();
+  }
+
+  _updatesResults(List<Result> resultsList){
+    setState(() {
+      print(results.toString());
+      if(results.isNotEmpty) {
+        results.clear();
+      }
+      results.addAll(resultsList);
+    });
+    _updateListModel();
+    print(results.length.toString());
+  }
+
+  _updateListModel(){
+    setState(() {
+      listModel = new ResultModel(_listKey, results);
+    });
+  }
+
+  _updateIsShowForm(bool status){
+    setState(() {
+      _isShowForm = status;
+    });
+  }
+
+  _updateIsShowButton(bool status){
+    setState(() {
+      _isShowButton= status;
+    });
+  }
+
+  _updateIsShowResults(bool status){
+    setState(() {
+      _isShowResults = status;
     });
   }
 
@@ -119,6 +170,12 @@ class _AdminScreenState extends State<AdminScreen>{
         choices.add(new CustomPopupMenu(title: 'Admin', icon: Icons.settings));
       });
     }
+  }
+
+  _updateInformationText(String text){
+    setState(() {
+      informationText = text;
+    });
   }
 
   _updateUserInfo(User user){
@@ -134,6 +191,17 @@ class _AdminScreenState extends State<AdminScreen>{
     setState(() {
       playoffYear = year;
     });
+    _updateInitResults();
+  }
+
+  _updateInitResults(){
+    if(playoffYear != null && !_isShowButton){
+      getResultsFromCompetition(int.parse(playoffYear)).then((result){
+        _updatesResults(result);
+        _updateListModel();
+        _updateIsShowResults(true);
+      });
+    }
   }
 
   void _selectDateLimit(int gameNumber) {
@@ -160,19 +228,6 @@ class _AdminScreenState extends State<AdminScreen>{
         }, currentTime: DateTime.now(), locale: LocaleType.fr);
   }
 
-  void _changeStateFilter(){
-    setState(() {
-      showOnlyCompleted = !showOnlyCompleted;
-    });
-    pronos.where((prono) => prono.completed).forEach((prono) {
-      if (showOnlyCompleted) {
-        listModel.removeAt(listModel.indexOf(prono));
-      } else {
-        listModel.insert(pronos.indexOf(prono), prono);
-      }
-    });
-  }
-
   String _checkLaunch(){
     String error = null;
     if(selectedTeamsEast.contains(null) || selectedTeamsWest.contains(null)){
@@ -194,27 +249,11 @@ class _AdminScreenState extends State<AdminScreen>{
           //_buildTimeline(),
           _buildTopHeader(),
           _buildBottomPart(),
-          //_buildFilterButton(),
         ],
       ),
     );
   }
 
-  Widget _buildFilterButton(){
-    return new Positioned(
-      top: _imageHeight - 40.0,
-      right: 10.0,
-      child: new FloatingActionButton(
-        onPressed: _changeStateFilter,
-        backgroundColor: Colors.deepOrange,
-        child: new  Icon(showOnlyCompleted ? Icons.list : Icons.filter_list,
-          color: Colors.white,
-          size: 26.0,
-        ),
-      ),
-      //backgroundColor: _colorAnimation.value,
-    );
-  }
 
   Widget _buildTopHeader() {
     return new Padding(
@@ -309,8 +348,9 @@ class _AdminScreenState extends State<AdminScreen>{
         children: <Widget>[
           _buildMyTasksHeader(), //Titre ADMIN
           _newPlayoffsLauncher(), //Bouton d'initialisation ou texte d'information
+          _buildInformationText(),
           _buildFormPlayoffs(), //Formulaire d'initialisation de toutes les équipes
-          //_buildTasksList(), //Liste des pronostics idem utilisateur mais en modifiable
+          _buildTasksList(), //Liste des pronostics idem utilisateur mais en modifiable
         ],
       ),
     );
@@ -352,7 +392,7 @@ class _AdminScreenState extends State<AdminScreen>{
                   datesLimites[serieNumber].day.toString()+"/"+
                       datesLimites[serieNumber].month.toString()+" "+
                       datesLimites[serieNumber].hour.toString()+":"+
-                      datesLimites[serieNumber].hour.toString(),
+                      datesLimites[serieNumber].minute.toString(),
                     style: TextStyle(fontSize: 10),)
                 ],
               )
@@ -414,13 +454,17 @@ class _AdminScreenState extends State<AdminScreen>{
                         if(_formKeyNewPlayoffs.currentState.validate()) {
                           _formKeyNewPlayoffs.currentState.save();
                           //print(selectedTeam1E+" vs "+selectedTeam8E);
-                          
+
                           String checkError = _checkLaunch();
                           if(checkError == null){
                             //FORMULAIRE VALIDE
                             print('OK Launch formulaire rapide');
-                            //initCompetitionModel
-
+                            if(modelInitAdminForm(int.parse(playoffYear), selectedTeamsEast, selectedTeamsWest, datesLimites).length == 8){
+                              _updateInformationText("Competition init : done");
+                              _updateIsShowForm(false);
+                              _updateIsShowButton(false);
+                              _updateInitResults();
+                            }
                           }else{
                            showDialog(
                              context: context,
@@ -455,36 +499,40 @@ class _AdminScreenState extends State<AdminScreen>{
     }
   }
 
+  Widget _buildInformationText(){
+    if(informationText != null){
+      return new Text(informationText, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),);
+    }else{
+      return Container(padding: EdgeInsets.all(0),);
+    }
+  }
+
   Widget _newPlayoffsLauncher(){
-    if(_isShowButton){
-      return Column(
-        children: <Widget>[
-          Row(
+    if(!_isShowButton){
+      return Row(
             children: <Widget>[
                 Text("Playoffs in progress ..."),
                 Padding(padding: EdgeInsets.all(8)),
                 RaisedButton(
-                  onPressed: () => print("DELETE"),
+                  onPressed: () {
+                    deleteCompetition(int.parse(playoffYear));
+                    _updateInformationText("Competition removed");
+                    _updateIsShowButton(true);
+                    _updateIsShowResults(false);
+                  },
                   color: Colors.red,
                   child: Text("Delete actual Playoffs", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),),
                 )
             ]
-          ),
-          RaisedButton(
-            onPressed: () => print("CLEAR"),
-            color: Colors.purple,
-            child: Text("Clear Playoffs From Screens", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),),
-          ),
-        ],
-      );
+          );
     }else {
       return Column(
         children: <Widget>[
           RaisedButton(
             onPressed: () {
+              print('results '+results.length.toString());
             setState(() {
               _isShowForm = !_isShowForm;
-              _isShowButton = false;
             });
           },
           elevation: 5,
@@ -502,21 +550,6 @@ class _AdminScreenState extends State<AdminScreen>{
         ],
       );
     }
-  }
-
-  Widget _buildTasksList() {
-    return new Expanded(
-      child: new AnimatedList(
-        initialItemCount: pronos.length,
-        key: _listKey,
-        itemBuilder: (context, index, animation) {
-          return new PronoRow(
-            prono: listModel[index],
-            animation: animation,
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildMyTasksHeader() {
@@ -545,4 +578,26 @@ class _AdminScreenState extends State<AdminScreen>{
       ),
     );
   }
+
+  Widget _buildTasksList() {
+    return new FutureBuilder<String>(builder: (context, snapshot) {
+      print(results.isNotEmpty.toString()+"  "+playoffYear.toString()+"   "+_isShowResults.toString());
+      if (results.isNotEmpty && playoffYear != null && _isShowResults) {
+        return  new Expanded(
+          child: new AnimatedList(
+            initialItemCount: results.length,
+            key: _listKey,
+            itemBuilder: (context, index, animation) {
+              return new ResultRow(
+                result: listModel[index],
+                animation: animation,
+              );
+            },
+          ),
+        );
+      }
+      return  Container(padding: EdgeInsets.all(0),);
+    });
+  }
+
 }

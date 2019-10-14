@@ -1,21 +1,23 @@
 import 'package:bricktime/model/prono.dart';
 import 'package:flutter/material.dart';
+import 'package:bricktime/dbase/user_prono_actions.dart';
 
 class PronoRow extends StatefulWidget {
 
   final Prono prono;
   final double dotSize = 14.0;
   final Animation<double> animation;
+  final String userId;
 
   PronoRowState createState()=> PronoRowState();
-  const PronoRow({Key key, this.prono, this.animation}) : super(key: key);
+  const PronoRow({Key key, this.prono, this.animation, this.userId}) : super(key: key);
 }
 
 class PronoRowState extends State<PronoRow>{
-  double _value = 2;
+  int _value = 4;
   String _winnerScore = "Winner";
 
-  String getLabel(double value){
+  String getLabel(int value){
     if(value == 0){
       return "4-0";
     }else if(value ==1){
@@ -41,119 +43,111 @@ class PronoRowState extends State<PronoRow>{
   void initState() {
     // TODO: implement initState
     super.initState();
+
     setState(() {
-      _value = widget.prono.score;
-      _winnerScore = (_value >= 4 ? widget.prono.teamB :  widget.prono.teamA) + " win "+getLabel(_value);
+      _value = int.parse(widget.prono.score.toString());
+      _winnerScore = (_value.toInt() > 4 ? widget.prono.teamB+" win " :  (_value.toInt() < 4.toInt() ? widget.prono.teamA+" win " : ""))+getLabel(_value.toInt());
+      //_winnerScore = (_value >= 4 ? widget.prono.teamB :  widget.prono.teamA) + " win "+getLabel(_value);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return new FadeTransition(
-      opacity: widget.animation,
-      child: new SizeTransition(
-        sizeFactor: widget.animation,
-        child: new GestureDetector(
-          onTap: () {
-            print("onTap called "+widget.prono.teamA);
-          },
-          child: new Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: new Row(
-            children: <Widget>[
-              new Padding(
-                padding:
-                new EdgeInsets.symmetric(horizontal: 32.0 - widget.dotSize / 2),
-                child: new Container(
-                  height: widget.dotSize,
-                  width: widget.dotSize,
-                  decoration: new BoxDecoration(
-                      shape: BoxShape.circle, color: widget.prono.date_limit.compareTo(DateTime.now()) > 0 ? Colors.green : Colors.deepOrange),
-                ),
-              ),
-              new Expanded(
-                child: new Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    new Row(
+    if(widget.prono.teamA != 'null' && widget.prono.teamB != 'null'){
+      return new FadeTransition(
+        opacity: widget.animation,
+        child: new SizeTransition(
+          sizeFactor: widget.animation,
+          child: new GestureDetector(
+            onTap: () {
+              print("onTap called "+widget.prono.teamA);
+            },
+            child: new Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5.0),
+              child: new Column(
+                children: <Widget>[
+                  new Row(
                       children: <Widget>[
-                        new Text(
-                          widget.prono.teamA,
-                          style: new TextStyle(fontSize: 18.0),
-                        ),
-                        new Text(
-                          " vs ",
-                          style: new TextStyle(fontSize: 16.0),
-                        ),
-                        new Text(
-                          widget.prono.teamB,
-                          style: new TextStyle(fontSize: 18.0),
-                        ),
-                      ],
-                    ),
-                    new Text(
-                      widget.prono.competition_level,
-                      style: new TextStyle(fontSize: 12.0, color: Colors.grey),
-                    ),
-                    new Slider(
-                      value: _value,
-                      min: 0,
-                      max: 8,
-                      activeColor: Colors.deepOrange,
-                      inactiveColor: Colors.grey,
-                      label: getLabel(_value),
-                      divisions: 8,
-                      onChanged: widget.prono.date_limit.compareTo(DateTime.now()) < 0 ? null : (value){
-                        setState(() {
-                          _value = value;
-                          _winnerScore = (value > 4 ? widget.prono.teamB+" win " :  (value < 4 ? widget.prono.teamA+" win " : ""))+getLabel(value);
-                        });
-                      },
-                    ),
-                    new Row(
-                      children: <Widget>[
-                        Text(
-                          _winnerScore,
-                          style: new TextStyle(fontSize: 14.0, color: Colors.black),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-             /*new Expanded(
-                  child: new DropdownButton<String>(
-                    items: <String>['4', '5', '6', '7'].map((String value) {
-                      return new DropdownMenuItem<String>(
-                        value: value,
-                        child: new Text(value),
-                      );
-                    }).toList(),
-
-                    onChanged: (_) {},
-                  )
-              ),*/
-              new Padding(
-                padding: const EdgeInsets.only(right: 16.0, left: 16.0),
-                child: new Column(
-                  children: <Widget>[
-                      new Text(
-                       "4",
-                        style: new TextStyle(fontSize: 18.0, color: Colors.green),
+                      new Padding(
+                      padding:
+                          new EdgeInsets.symmetric(horizontal: 32.0 - widget.dotSize / 2),
+                      child: new Container(
+                        height: widget.dotSize,
+                        width: widget.dotSize,
+                        decoration: new BoxDecoration(
+                            shape: BoxShape.circle, color: widget.prono.date_limit.compareTo(DateTime.now()) > 0 ? Colors.green : Colors.deepOrange),
                       ),
-                      new Text(
-                        "3",
-                        style: new TextStyle(fontSize: 18.0, color : Colors.grey),
+                    ),
+                    new Expanded(
+                      child: new Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          new Row(
+                            children: <Widget>[
+                              new Text(
+                                widget.prono.teamA.toString(),
+                                style: new TextStyle(fontSize: 18.0),
+                              ),
+                              new Text(
+                                " vs ",
+                                style: new TextStyle(fontSize: 16.0),
+                              ),
+                              new Text(
+                                widget.prono.teamB.toString(),
+                                style: new TextStyle(fontSize: 18.0),
+                              ),
+                            ],
+                          ),
+                          new Text(
+                            widget.prono.competition_level.toString(),
+                            style: new TextStyle(fontSize: 12.0, color: Colors.grey),
+                          ),
+                          new Slider(
+                            value: double.parse(_value.toString()),
+                            min: 0,
+                            max: 8,
+                            activeColor: Colors.deepOrange,
+                            inactiveColor: Colors.grey,
+                            label: getLabel(_value),
+                            divisions: 9,
+                            onChanged: widget.prono.date_limit.compareTo(DateTime.now()) < 0 ? null : (value){
+                              setState(() {
+                                _value = value.toInt();
+                                _winnerScore = (value.toInt() > 4 ? widget.prono.teamB+" win " :  (value < 4.toInt() ? widget.prono.teamA+" win " : ""))+getLabel(value.toInt());
+                              });
+                              setPronoFromSliderForUser(widget.userId, value.toInt(), widget.prono.competition_level);
+                            },
+                          ),
+                          new Row(
+                            children: <Widget>[
+                              Text(
+                                _winnerScore,
+                                style: new TextStyle(fontSize: 14.0, color: _value == 4 ? Colors.red : Colors.black),
+                              ),
+                            ],
+                          )
+                        ],
                       ),
-                  ],
-                ),
-              ),
-            ],
+                    ),
+                    new Padding(
+                      padding: const EdgeInsets.only(right: 16.0, left: 16.0),
+                      child:  new Text(
+                            widget.prono.points.toString(),
+                            style: new TextStyle(fontSize: 30.0, color: Colors.green, fontWeight: FontWeight.w800),
+                          ),
+                    ),
+                    ],
+                  ),
+                  Divider(),
+                ],
+              )
+            ),
           ),
         ),
-      ),
-      ),
-    );
+      );
+    }else{
+      return new Container(padding: EdgeInsets.all(0),);
+    }
   }
 }
 

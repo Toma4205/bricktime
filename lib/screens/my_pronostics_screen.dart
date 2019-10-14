@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:bricktime/screens/animated_fab.dart';
 import 'package:bricktime/screens/diagonal_clipper.dart';
-import 'package:bricktime/model/initial_list.dart';
+//import 'package:bricktime/model/initial_list.dart';
 import 'package:bricktime/model/list_model.dart';
 import 'package:bricktime/model/prono_row.dart';
+import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:bricktime/login_screen.dart';
 import 'package:bricktime/screens/custom_popup_menu.dart';
@@ -13,6 +14,8 @@ import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/screens/ranking_screen.dart';
 
+import 'package:bricktime/model/result.dart';
+import 'package:bricktime/dbase/user_prono_actions.dart';
 
 class MyPronosticsScreen extends StatefulWidget {
   MyPronosticsScreen({Key key, this.auth}) : super(key: key);
@@ -31,7 +34,9 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   bool showOnlyCompleted = false;
   bool isAdmin = false;
 
-  String playoffYear = DateTime.now().year.toString();
+  List<Prono> pronos = new List();
+
+  String playoffYear; //= DateTime.now().year.toString();
 
 
   List<CustomPopupMenu> choices = <CustomPopupMenu>[
@@ -72,13 +77,14 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   @override
   void initState() {
     super.initState();
-    listModel = new ListModel(_listKey, pronos);
 
     widget.auth.getCurrentUser().then((user){
       getUserInfo(user).then(_updateUserInfo);
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
       getAdminId().then((_updateIsAdmin));
     });
+
+    _updateInitPronos();
   }
 
   _updateIsAdmin(String adminId){
@@ -104,7 +110,39 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     setState(() {
       playoffYear = year;
     });
+    _updateInitPronos();
   }
+
+  _updateInitPronos(){
+    if(playoffYear != null && myuser.id != null){
+      getPronoFromCompetitionForUser(myuser.id, int.parse(playoffYear)).then((pronos){
+        _updatesPronos(pronos);
+        _updateListModel();
+        //_updateIsShowResults(true);
+      });
+    }
+  }
+
+  _updatesPronos(List<Prono> pronoList){
+    setState(() {
+      print(pronos.toString());
+      if(pronos.isNotEmpty) {
+        pronos.clear();
+      }
+
+      pronos.addAll(pronoList);
+
+    });
+    _updateListModel();
+    print(pronos.length.toString());
+  }
+
+  _updateListModel(){
+    setState(() {
+      listModel = new ListModel(_listKey, pronos);
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +154,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
           _buildTopHeader(),
           _buildProfileRow(),
           _buildBottomPart(),
-          _buildFilterButton(),
+         // _buildFilterButton(),
         ],
       ),
     );
@@ -214,6 +252,8 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     );
   }
 
+
+
   Widget _buildProfileRow() {
     return new Padding(
       padding: new EdgeInsets.only(left: 16.0, top: _imageHeight / 2.5),
@@ -266,18 +306,24 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   Widget _buildTasksList() {
-    return new Expanded(
-      child: new AnimatedList(
-        initialItemCount: pronos.length,
-        key: _listKey,
-        itemBuilder: (context, index, animation) {
-          return new PronoRow(
-            prono: listModel[index],
-            animation: animation,
-          );
-        },
-      ),
-    );
+    return new FutureBuilder<String>(builder: (context, snapshot) {
+      if (pronos.isNotEmpty && playoffYear != null) {
+        return  new Expanded(
+          child: new AnimatedList(
+            initialItemCount: pronos.length,
+            key: _listKey,
+            itemBuilder: (context, index, animation) {
+              return  new PronoRow(
+                prono: listModel[index],
+                animation: animation,
+                userId: myuser.id,
+              );
+            },
+          ),
+        );
+      }
+      return  Text('No game yet');//Container(padding: EdgeInsets.all(0),);
+    });
   }
 
   Widget _buildMyTasksHeader() {
@@ -291,7 +337,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
             style: new TextStyle(fontSize: 34.0),
           ),
           new Text(
-            'NBA Playoff '+playoffYear,
+            'NBA Playoff ',
             style: new TextStyle(color: Colors.grey, fontSize: 12.0),
           ),
           new Text(

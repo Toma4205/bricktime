@@ -16,12 +16,47 @@ Future<List<String>> getTeams(String conference) async {
 
     teamSnap.forEach((key, value) {
       if(value['conference'] == conference){
-        teams.add(value['city']);
+        teams.add(key);
       }
     });
 
     teams.sort();
     completer.complete(teams);
   });
+  return completer.future;
+}
+
+Future<String> getTeamCity(String id) async {
+  Completer<String> completer = new Completer<String>();
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("teams")
+      .child(id)
+      .child("city")
+      .once()
+      .then((DataSnapshot snapshot) {
+
+
+        completer.complete(snapshot.value.toString());
+        print("return : "+snapshot.value.toString());
+  });
+  return completer.future;
+}
+
+Future<List<String>> getTeamsCities(String idA, String idB) async {
+
+  Completer<List<String>> completer = new Completer<List<String>>();
+
+  String cityA, cityB;
+
+  getTeamCity(idA).then((city) => cityA = city);
+  getTeamCity(idB).then((city) => cityB = city);
+
+  List<String> cities = new List();
+  cities.add(cityA);
+  cities.add(cityB);
+
+  completer.complete(cities);
   return completer.future;
 }
