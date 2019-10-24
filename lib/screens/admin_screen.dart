@@ -11,6 +11,7 @@ import 'package:bricktime/dbase/teams_actions.dart';
 import 'package:bricktime/dbase/results_actions.dart';
 import 'package:bricktime/model/admin_form_model.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:bricktime/screens/ranking_screen.dart';
 import 'package:bricktime/model/result.dart';
 import 'package:bricktime/model/result_model.dart';
 import 'package:bricktime/model/result_row.dart';
@@ -77,10 +78,14 @@ class _AdminScreenState extends State<AdminScreen>{
     }else if(choice.title == 'Admin'){
       //On est déjà dessus
     }else if(choice.title == 'My Pronostics'){
-
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+      );
+    } else if (choice.title == 'Ranking') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Ranking(auth: widget.auth)),
       );
     }
   }
