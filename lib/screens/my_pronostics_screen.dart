@@ -4,6 +4,7 @@ import 'package:bricktime/screens/diagonal_clipper.dart';
 //import 'package:bricktime/model/initial_list.dart';
 import 'package:bricktime/model/list_model.dart';
 import 'package:bricktime/model/prono_row.dart';
+import 'package:bricktime/model/prono_row_stream.dart';
 import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:bricktime/login_screen.dart';
@@ -14,10 +15,12 @@ import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/model/result.dart';
 import 'package:bricktime/dbase/user_prono_actions.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class MyPronosticsScreen extends StatefulWidget {
   MyPronosticsScreen({Key key, this.auth}) : super(key: key);
   final BaseAuth auth;
+
 
   @override
   _MyPronosticsScreenState createState() => new _MyPronosticsScreenState();
@@ -29,10 +32,15 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   final User myuser = User(id: 'id', pseudo: 'pseudo', level: 'level', lastConnexion: 'lastConnexion');
 
   ListModel listModel;
-  bool showOnlyCompleted = false;
+  bool showOnlyPending = false;
   bool isAdmin = false;
 
   List<Prono> pronos = new List();
+  static const pathPronos = ["firstround/ESerie1","firstround/ESerie2", "firstround/ESerie3", "firstround/ESerie4",
+                              "firstround/WSerie1","firstround/WSerie2", "firstround/WSerie3", "firstround/WSerie4",
+                              "confsemifinal/ESerie1","confsemifinal/ESerie2", "confsemifinal/WSerie1", "confsemifinal/WSerie2",
+                              "conffinal/ESerie1","conffinal/WSerie1",
+                              "final/Serie1"];
 
   String playoffYear; //= DateTime.now().year.toString();
 
@@ -147,7 +155,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
           _buildTopHeader(),
           _buildProfileRow(),
           _buildBottomPart(),
-         // _buildFilterButton(),
+          _buildFilterButton(),
         ],
       ),
     );
@@ -160,7 +168,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
         child: new FloatingActionButton(
           onPressed: _changeStateFilter,
           backgroundColor: Colors.deepOrange,
-          child: new  Icon(showOnlyCompleted ? Icons.list : Icons.filter_list,
+          child: new  Icon(showOnlyPending ? Icons.list : Icons.filter_list,
               color: Colors.white,
               size: 26.0,
             ),
@@ -171,15 +179,17 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
 
   void _changeStateFilter(){
     setState(() {
-      showOnlyCompleted = !showOnlyCompleted;
+      showOnlyPending = !showOnlyPending;
     });
+   /*
     pronos.where((prono) => prono.completed).forEach((prono) {
-      if (showOnlyCompleted) {
+      if (showOnlyPending) {
         listModel.removeAt(listModel.indexOf(prono));
       } else {
         listModel.insert(pronos.indexOf(prono), prono);
       }
     });
+    */
   }
 
   Widget _buildIamge() {
@@ -299,24 +309,74 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   Widget _buildTasksList() {
+/*
+    return StreamBuilder(
+        stream: FirebaseDatabase.instance.reference().child("users").child(myuser.id).child("pronos").onValue,
+        builder: (BuildContext context, AsyncSnapshot<Event> event){
+          //print('event : '+event.data.snapshot.value.toString());
+          if (!event.hasData) {
+            return new Center(child: new Text('Loading...'));
+          }
+
+          if(event.data.snapshot.value.toString() == "null"){
+            return new Center(child: new Text('Loading...'));
+          }else{
+
+            //print("LA : "+event.data.snapshot.value.toString());
+            Map<dynamic, dynamic> schedules = event.data.snapshot.value;
+            schedules.values.forEach((element) {
+              print('SCHED1');
+              Map<dynamic, dynamic> schedules2 = element;
+              schedules2.forEach((key2, value2){
+
+                Map<dynamic, dynamic> schedules3 = element;
+                schedules3.forEach((key3, value3){
+                    print("element : "+key3.toString()+ " - "+value3.toString());
+                });
+
+              });
+
+            });
+            return new Center(child: new Text('OK DATA...'));
+          }
+
+        },
+    );
+
+    ///////
+
     return new FutureBuilder<String>(builder: (context, snapshot) {
       if (pronos.isNotEmpty && playoffYear != null) {
         return  new Expanded(
           child: new AnimatedList(
-            initialItemCount: pronos.length,
+            initialItemCount: pronos.length, //fixe ?
             key: _listKey,
             itemBuilder: (context, index, animation) {
-              return  new PronoRow(
-                prono: listModel[index],
-                animation: animation,
-                userId: myuser.id,
-              );
+                return new PronoRow(
+                  prono: listModel[index],
+                  animation: animation,
+                  userId: myuser.id,
+                );
             },
           ),
         );
       }
       return  Text('No game yet');//Container(padding: EdgeInsets.all(0),);
     });
+    */
+
+    return  new Expanded(
+      child: ListView.builder(
+          itemCount: pathPronos.length,
+          itemBuilder: (context, index) {
+            return new PronoRowStream(
+              userId: myuser.id,
+              path: pathPronos[index],
+              playoffYear: playoffYear,
+            );
+          }
+          ),
+      );
   }
 
   Widget _buildMyTasksHeader() {
@@ -333,10 +393,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
             'NBA Playoff ',
             style: new TextStyle(color: Colors.grey, fontSize: 12.0),
           ),
-          new Text(
-            '24 points',
-            style: new TextStyle(color: Colors.deepOrange, fontSize: 18.0),
-          ),
+          getTotalPoints()
         ],
       ),
     );
@@ -353,4 +410,37 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
       ),
     );
   }
+
+  Widget getTotalPoints(){
+    return new StreamBuilder(
+        stream: FirebaseDatabase.instance.reference().child("users").child(myuser.id).child("pronos").child("2020playoffs").onValue,
+        builder: (BuildContext context,  AsyncSnapshot<Event> event){
+          if (!event.hasData) {
+          return new Center(child: new Text('Loading...'));
+          }
+
+          if(event.data.snapshot.value.toString() == "null"){
+          return new Center(child: new Text('Loading...'));
+          }else{
+            int totalPoints = 0;
+            Map<dynamic, dynamic> competitionlevelSnap = event.data.snapshot.value;
+            competitionlevelSnap.forEach((key,value){
+
+              Map<dynamic, dynamic> serielevelSnap = value;
+              serielevelSnap.forEach((keySerie, valueSerie){
+                totalPoints += valueSerie["points"];
+              });
+            });
+
+
+
+            return new Text(
+              totalPoints.toString()+' points',
+              style: new TextStyle(color: Colors.deepOrange, fontSize: 18.0),
+            );
+          }
+        }
+    );
+  }
+
 }

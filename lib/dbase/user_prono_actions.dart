@@ -268,7 +268,7 @@ Future<List<Prono>> getPronoFromCompetitionForUser(String id, int year) async {
       });
     });
 
-    pronos.sort((a,b) => b.date_limit.compareTo(a.date_limit));
+    pronos.sort((a,b) => a.date_limit.compareTo(b.date_limit));
     print("Length : "+pronos.length.toString());
     completer.complete(pronos);
   });
@@ -280,6 +280,16 @@ setPronoFromSliderForUser(String id, int score, String pathGame){
     FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child(pathGame).update(
         {
           'score' : score,
+        });
+  });
+}
+
+
+setPronoCompletedForUser(String id, bool isCompleted, String pathGame){
+  getActualPlayoffYear().then((year) {
+    FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child(pathGame).update(
+        {
+          'completed' : isCompleted,
         });
   });
 }

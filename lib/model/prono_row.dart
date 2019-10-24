@@ -14,7 +14,7 @@ class PronoRow extends StatefulWidget {
 }
 
 class PronoRowState extends State<PronoRow>{
-  int _value = 4;
+  int _value;// = 4;
   String _winnerScore = "Winner";
 
   String getLabel(int value){
@@ -124,6 +124,20 @@ class PronoRowState extends State<PronoRow>{
                                 _winnerScore,
                                 style: new TextStyle(fontSize: 14.0, color: _value == 4 ? Colors.red : Colors.black),
                               ),
+                            ],
+                          ),
+                          new Row(
+                            children: <Widget>[
+                              DateTime.now().compareTo(widget.prono.date_limit) < 0 ?
+                              Text(
+                                widget.prono.date_limit.difference(DateTime.now()).inMinutes > 60 ?
+                                    (widget.prono.date_limit.difference(DateTime.now()).inHours> 24 ?
+                                      widget.prono.date_limit.difference(DateTime.now()).inDays.toString()+" days left"
+                                      : widget.prono.date_limit.difference(DateTime.now()).inHours.toString()+" hours left")
+                                    : widget.prono.date_limit.difference(DateTime.now()).inMinutes.toString()+" minutes left",
+                                style: new TextStyle(fontSize: 14.0, color: _value == 4 ? Colors.red : Colors.black),
+                              )
+                                  : Container(padding: EdgeInsets.all(0),),
                             ],
                           )
                         ],
