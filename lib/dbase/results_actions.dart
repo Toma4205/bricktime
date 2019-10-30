@@ -2,6 +2,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:bricktime/model/result.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'dart:async';
+import 'package:bricktime/dbase/rules_actions.dart';
+import 'package:bricktime/model/points_rules.dart';
 
 //Renvoie le gamepath du dessus dans la compétition
 List _getLevelUpAndTeam(String gamePath){
@@ -246,6 +248,34 @@ Future<List<Result>> getResultsFromCompetition(int year) async {
   return completer.future;
 }
 
+Future<Result> getResultFromPath(int playoffYear, String path) async {
+  Completer<Result> completer = new Completer<Result>();
+  print("getResultFromPath : "+path.toString());
+  FirebaseDatabase.instance
+      .reference()
+      .child("results")
+      .child(playoffYear.toString()+"playoffs")
+      .child(path)
+      .once()
+      .then((DataSnapshot snapshot) {
+
+
+    Map<dynamic, dynamic> competitionlevelSnap = snapshot.value;
+    Result result = new Result(
+        teamA: snapshot.value['teamA'].toString(),
+        teamB: snapshot.value['teamB'].toString(),
+        scoreA: snapshot.value['winA'],
+        scoreB: snapshot.value['winB'],
+        isDefinitive: snapshot.value['definitive'],
+        first_game_date: DateTime.tryParse(snapshot.value['date_first_game']),
+        competition_level: path
+      );
+    completer.complete(result);
+
+  });
+  return completer.future;
+}
+
 setResultToGame(int scoreA, int scoreB, String gamePath){
   getActualPlayoffYear().then((year){
     FirebaseDatabase.instance.reference().child('results').child(year+"playoffs").child(gamePath).update(
@@ -289,20 +319,24 @@ Future<bool> isNextSerieOpen(String nextGamePath) async{
   String nextLevel = _getLevelUpAndTeam(nextGamePath).elementAt(0);
     Completer<bool> completer = new Completer<bool>();
 
-    getActualPlayoffYear().then((year){
-      FirebaseDatabase.instance
-          .reference()
-          .child("results")
-          .child(year.toString()+"playoffs")
-          .child(nextLevel)
-          .once()
-          .then((DataSnapshot snapshot) {
+    if(nextLevel != null){
+      getActualPlayoffYear().then((year){
+        FirebaseDatabase.instance
+            .reference()
+            .child("results")
+            .child(year.toString()+"playoffs")
+            .child(nextLevel)
+            .once()
+            .then((DataSnapshot snapshot) {
 
-            bool isTeamA = snapshot.value['teamA'] != null;
-            bool isTeamB = snapshot.value['teamB'] != null;
-            completer.complete(isTeamA && isTeamB);
+          bool isTeamA = snapshot.value['teamA'] != null;
+          bool isTeamB = snapshot.value['teamB'] != null;
+          completer.complete(isTeamA && isTeamB);
+        });
       });
-    });
+    }else{
+      completer.complete(false);
+    }
 
     return completer.future;
 }
@@ -316,5 +350,149 @@ setDateLimit(String gamePath, DateTime date){
             'date_first_game': date.toString(),
           });
     });
+  }
+}
+
+initNewPronoFromResult(String gamePath, DateTime date){
+  List nextGameInfo = _getLevelUpAndTeam(gamePath);
+  if(nextGameInfo[0] != null) {
+    getActualPlayoffYear().then((year) {
+      getResultFromPath(int.parse(year),nextGameInfo[0]).then((result){
+
+        setNewPronoForAllUsers(int.parse(year), nextGameInfo[0], result);
+      });
+    });
+  }
+}
+
+setNewPronoForAllUsers(int year, String path, Result result){
+  FirebaseDatabase.instance
+      .reference()
+      .child("users")
+      .once()
+      .then((DataSnapshot snapshot) {
+
+    Map<dynamic, dynamic> usersSnap = snapshot.value;
+    usersSnap.forEach((key, value) {
+      setNewPronoForUser(key, result, year, path);
+    });
+  });
+}
+
+setNewPronoForUser(String id, Result result, int year, String path){
+  int initScore = 4; //4 correspond à Waiting for decision
+
+  FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child(path).update(
+      {
+        'date_first_game' : result.first_game_date.toString(),
+        'teamA' : result.teamA,
+        'teamB' : result.teamB,
+        'winA' : result.scoreA,
+        'winB' : result.scoreB,
+        'completed' : false,
+        'points' : 0,
+        'score' : initScore,
+      });
+}
+
+
+majPointsAllUsersForPath(String path){
+  getActualPlayoffYear().then((year) {
+    getPointsRules().then((pointsRules){
+      getResultFromPath(int.parse(year), path).then((result){
+        FirebaseDatabase.instance
+            .reference()
+            .child("users")
+            .once()
+            .then((DataSnapshot snapshot) {
+
+          int posX;
+          switch(path.substring(0,path.indexOf("/",))){
+            case "firstround" :
+              posX = 0;
+              break;
+            case "confsemifinal" :
+              posX = 2;
+              break;
+            case "conffinal" :
+              posX = 3;
+              break;
+            case "final" :
+              posX = 1;
+              break;
+            default:
+              print('Erreur Switch - Case : majPointsAllUsersForPath');
+          }
+
+
+          Map<dynamic, dynamic> usersSnap = snapshot.value;
+          usersSnap.forEach((key, value) {
+            majPointsPathForUser(key, int.parse(year), path, pointsRules[posX], result);
+          });
+        });
+      });
+    });
+  });
+}
+
+
+Future<int> getPointPathForUser(int year, int scoreA, int scoreB, String userId, String path, PointsRules pointRule) async{
+
+  Completer<int> completer = new Completer<int>();
+  int pointPath = 0;
+  FirebaseDatabase.instance
+      .reference()
+      .child("users")
+      .child(userId)
+      .child('pronos')
+      .child(year.toString()+"playoffs")
+      .child(path)
+      .once()
+      .then((DataSnapshot snapshot) {
+
+
+        if(getWinAFromScore(snapshot.value['score']) == scoreA
+        && getWinBFromScore(snapshot.value['score']) == scoreB
+        && snapshot.value['score'] != 4){
+          pointPath = pointRule.perfect;
+        }else if((snapshot.value['score'] == 0 && scoreA == 4) || (snapshot.value['score'] == 8 && scoreB == 4)){
+          pointPath = pointRule.good;
+        }else{
+          pointPath = 0;
+        }
+
+    completer.complete(pointPath);
+  });
+
+  return completer.future;
+}
+
+majPointsPathForUser(String id, int year, String path, PointsRules pointsRules, Result result){
+  getPointPathForUser(year, result.scoreA, result.scoreB, id, path, pointsRules).then((points){
+    print("majPoints : "+pointsRules.level+" - "+points.toString());
+    FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child(path).update(
+        {
+          'points' : points,
+        });
+  });
+}
+
+int getWinAFromScore(int score){
+  if(score < 4){
+    return 4;
+  }else if(score > 4){
+    return 8-score;
+  }else{
+    return null;
+  }
+}
+
+int getWinBFromScore(int score){
+  if(score > 4){
+    return 4;
+  }else if(score < 4){
+    return score;
+  }else{
+    return null;
   }
 }

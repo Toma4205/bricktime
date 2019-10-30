@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bricktime/screens/animated_fab.dart';
 import 'package:bricktime/screens/diagonal_clipper.dart';
-//import 'package:bricktime/model/initial_list.dart';
 import 'package:bricktime/model/list_model.dart';
-import 'package:bricktime/model/prono_row.dart';
 import 'package:bricktime/model/prono_row_stream.dart';
 import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/auth/authEmail.dart';
@@ -14,8 +12,6 @@ import 'package:bricktime/model/user.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/screens/ranking_screen.dart';
-
-import 'package:bricktime/model/result.dart';
 import 'package:bricktime/dbase/user_prono_actions.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -167,7 +163,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
       ),
     );
   }
-  
+
   Widget _buildFilterButton(){
     return new Positioned(
         top: _imageHeight - 40.0,
@@ -175,7 +171,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
         child: new FloatingActionButton(
           onPressed: _changeStateFilter,
           backgroundColor: Colors.deepOrange,
-          child: new  Icon(showOnlyPending ? Icons.list : Icons.filter_list,
+          child: new  Icon(showOnlyPending ? Icons.timer : Icons.filter_list,
               color: Colors.white,
               size: 26.0,
             ),
@@ -188,15 +184,6 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     setState(() {
       showOnlyPending = !showOnlyPending;
     });
-   /*
-    pronos.where((prono) => prono.completed).forEach((prono) {
-      if (showOnlyPending) {
-        listModel.removeAt(listModel.indexOf(prono));
-      } else {
-        listModel.insert(pronos.indexOf(prono), prono);
-      }
-    });
-    */
   }
 
   Widget _buildIamge() {
@@ -316,62 +303,6 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   Widget _buildTasksList() {
-/*
-    return StreamBuilder(
-        stream: FirebaseDatabase.instance.reference().child("users").child(myuser.id).child("pronos").onValue,
-        builder: (BuildContext context, AsyncSnapshot<Event> event){
-          //print('event : '+event.data.snapshot.value.toString());
-          if (!event.hasData) {
-            return new Center(child: new Text('Loading...'));
-          }
-
-          if(event.data.snapshot.value.toString() == "null"){
-            return new Center(child: new Text('Loading...'));
-          }else{
-
-            //print("LA : "+event.data.snapshot.value.toString());
-            Map<dynamic, dynamic> schedules = event.data.snapshot.value;
-            schedules.values.forEach((element) {
-              print('SCHED1');
-              Map<dynamic, dynamic> schedules2 = element;
-              schedules2.forEach((key2, value2){
-
-                Map<dynamic, dynamic> schedules3 = element;
-                schedules3.forEach((key3, value3){
-                    print("element : "+key3.toString()+ " - "+value3.toString());
-                });
-
-              });
-
-            });
-            return new Center(child: new Text('OK DATA...'));
-          }
-
-        },
-    );
-
-    ///////
-
-    return new FutureBuilder<String>(builder: (context, snapshot) {
-      if (pronos.isNotEmpty && playoffYear != null) {
-        return  new Expanded(
-          child: new AnimatedList(
-            initialItemCount: pronos.length, //fixe ?
-            key: _listKey,
-            itemBuilder: (context, index, animation) {
-                return new PronoRow(
-                  prono: listModel[index],
-                  animation: animation,
-                  userId: myuser.id,
-                );
-            },
-          ),
-        );
-      }
-      return  Text('No game yet');//Container(padding: EdgeInsets.all(0),);
-    });
-    */
-
     return  new Expanded(
       child: ListView.builder(
           itemCount: pathPronos.length,
@@ -380,6 +311,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
               userId: myuser.id,
               path: pathPronos[index],
               playoffYear: playoffYear,
+              showPending: showOnlyPending,
             );
           }
           ),

@@ -2,6 +2,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:bricktime/model/result.dart';
 import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
+import 'package:bricktime/dbase/results_actions.dart';
 import 'package:bricktime/dbase/teams_actions.dart';
 import 'dart:async';
 
@@ -29,18 +30,6 @@ setInitialCompetitionPronos(int year, List<Result> results) {
 
 setInitialCompetitionPronosForUser(String id, List<Result> results, int year){
   int initScore = 4; //4 correspond à Waiting for decision
-
-  FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child('firstround').child("ESerie1").update(
-      {
-        'date_first_game' : results[0].first_game_date.toString(),
-        'teamA' : results[0].teamA,
-        'teamB' : results[0].teamB,
-        'winA' : results[0].scoreA,
-        'winB' : results[0].scoreB,
-        'completed' : false,
-        'points' : 0,
-        'score' : initScore,
-      });
 
   FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child('firstround').child("ESerie2").update(
       {
@@ -248,23 +237,24 @@ Future<List<Prono>> getPronoFromCompetitionForUser(String id, int year) async {
       .once()
       .then((DataSnapshot snapshot) {
 
+        //A FAIRE : gérer le null = pronos pas encore initialisés
+
     List<Prono> pronos = new List();
     Map<dynamic, dynamic> competitionlevelSnap = snapshot.value;
 
     competitionlevelSnap.forEach((key, value) {
       Map<dynamic, dynamic> serielevelSnap = value;
       serielevelSnap.forEach((key1, value1) {
-        pronos.add(new Prono(
-          teamA: value1['teamA'].toString(),
-          teamB: value1['teamB'].toString(),
-          winA: value1['winA'],
-          winB: value1['winB'],
-          score: value1['score'],
-          points: value1['points'],
-          completed: value1['completed'],
-          competition_level: key.toString()+"/"+key1.toString(),
-          date_limit: DateTime.tryParse(value1['date_first_game']),));
-
+          pronos.add(new Prono(
+            teamA: value1['teamB'].toString(),
+            teamB: value1['teamB'].toString(),
+            winA: value1['winA'],
+            winB: value1['winB'],
+            score: value1['score'],
+            points: value1['points'],
+            completed: value1['completed'],
+            competition_level: key.toString()+"/"+key1.toString(),
+            date_limit: DateTime.tryParse(value1['date_first_game']),));
       });
     });
 
@@ -273,6 +263,31 @@ Future<List<Prono>> getPronoFromCompetitionForUser(String id, int year) async {
     completer.complete(pronos);
   });
   return completer.future;
+}
+
+
+Future<String> getTeamName(String idTeam){
+  Completer<String> completer = new Completer<String>();
+  print("getTeamName : "+idTeam.toString());
+  if(idTeam != null){
+    FirebaseDatabase.instance
+        .reference()
+        .child("teams")
+        .child(idTeam)
+        .once()
+        .then((DataSnapshot snapshot) {
+
+      // Map<dynamic, dynamic> teamSnap = snapshot.value;
+      String teamName = snapshot.value['city'];
+
+      completer.complete(teamName);
+    });
+    return completer.future;
+  }else{
+    completer.complete(idTeam);
+    return completer.future;
+  }
+
 }
 
 setPronoFromSliderForUser(String id, int score, String pathGame){
@@ -293,3 +308,4 @@ setPronoCompletedForUser(String id, bool isCompleted, String pathGame){
         });
   });
 }
+

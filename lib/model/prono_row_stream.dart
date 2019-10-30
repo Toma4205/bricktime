@@ -10,9 +10,10 @@ class PronoRowStream extends StatefulWidget {
   final String userId;
   final String path;
   final String playoffYear;
+  final bool showPending;
 
   PronoRowStreamState createState()=> PronoRowStreamState();
-  const PronoRowStream({Key key, this.userId, this.path, this.playoffYear}) : super(key: key);
+  const PronoRowStream({Key key, this.userId, this.path, this.playoffYear, this.showPending}) : super(key: key);
 }
 
 class PronoRowStreamState extends State<PronoRowStream>{
@@ -77,7 +78,9 @@ class PronoRowStreamState extends State<PronoRowStream>{
               completed: pronoJson['completed'],
             );
 
-            if(prono.teamA.toString() != "null" && prono.teamB.toString() != "null"){
+
+            if(prono.teamA.toString() != "null" && prono.teamB.toString() != "null"
+                && (widget.showPending ? prono.date_limit.compareTo(DateTime.now()) > 0 : true)){
               return new ListTile(
                 title:  new Padding(
                         padding: const EdgeInsets.symmetric(vertical: 5.0,),
@@ -102,16 +105,16 @@ class PronoRowStreamState extends State<PronoRowStream>{
                                       new Row(
                                         children: <Widget>[
                                           new Text(
-                                            prono.teamA.toString(),
-                                            style: new TextStyle(fontSize: 18.0),
-                                          ),
-                                          new Text(
-                                            " vs ",
+                                            prono.teamA.toString().substring(0,1)+". "+prono.teamA.toString().substring(1),
                                             style: new TextStyle(fontSize: 16.0),
                                           ),
                                           new Text(
-                                            prono.teamB.toString(),
-                                            style: new TextStyle(fontSize: 18.0),
+                                            " vs ",
+                                            style: new TextStyle(fontSize: 14.0),
+                                          ),
+                                          new Text(
+                                            prono.teamB.toString().substring(0,1)+". "+prono.teamB.toString().substring(1),
+                                            style: new TextStyle(fontSize: 16.0),
                                           ),
                                         ],
                                       ),

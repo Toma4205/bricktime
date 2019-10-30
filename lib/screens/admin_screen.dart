@@ -15,6 +15,8 @@ import 'package:bricktime/screens/ranking_screen.dart';
 import 'package:bricktime/model/result.dart';
 import 'package:bricktime/model/result_model.dart';
 import 'package:bricktime/model/result_row.dart';
+import 'package:bricktime/model/result_row_stream.dart';
+import 'package:bricktime/dbase/rules_actions.dart';
 
 //import 'package:bricktime/model/initial_result.dart';
 
@@ -30,6 +32,12 @@ class AdminScreen extends StatefulWidget{
 class _AdminScreenState extends State<AdminScreen>{
   final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
   final _formKeyNewPlayoffs = GlobalKey<FormState>();
+
+  static const pathPronos = ["firstround/ESerie1","firstround/ESerie2", "firstround/ESerie3", "firstround/ESerie4",
+  "firstround/WSerie1","firstround/WSerie2", "firstround/WSerie3", "firstround/WSerie4",
+  "confsemifinal/ESerie1","confsemifinal/ESerie2", "confsemifinal/WSerie1", "confsemifinal/WSerie2",
+  "conffinal/ESerie1","conffinal/WSerie1",
+  "final/Serie1"];
 
 
   final double _imageHeight = 256.0;
@@ -49,7 +57,13 @@ class _AdminScreenState extends State<AdminScreen>{
   bool _isShowForm = false; //Idem
   bool _isShowResults = false;
 
-  String playoffYear;
+  bool _isLevel1 = true;
+  bool _isLevel2 = true;
+  bool _isLevel3 = true;
+  bool _isLevel4 = true;
+
+
+  static const String playoffYear = "2020playoffs";
   List<DateTime> datesLimites = new List(8);
   List<Color>  datesColors = new List(8);
   List<String> selectedTeamsEast = new List(8);
@@ -90,17 +104,36 @@ class _AdminScreenState extends State<AdminScreen>{
     }
   }
 
+  _isLevel_1(){
+    setState(() {
+      _isLevel1 = !_isLevel1;
+    });
+  }
+
+  _isLevel_2(){
+    setState(() {
+      _isLevel2 = !_isLevel2;
+    });
+  }
+
+  _isLevel_3(){
+    setState(() {
+      _isLevel3 = !_isLevel3;
+    });
+  }
+
+  _isLevel_4(){
+    setState(() {
+      _isLevel4 = !_isLevel4;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-
-    //listModel = new ResultModel(_listKey, widget.results);
-    /*
-    getResultsFromCompetition(2019).then((result){
-      _updatesResults(result);
-      _updateListModel();
+    getPointsRules().then((list) {
+      print('ok');
     });
-    */
 
     getTeams('East').then((team){
       teamsE.clear();
@@ -189,18 +222,18 @@ class _AdminScreenState extends State<AdminScreen>{
 
   _updateActualPlayoffsYear(String year){
     setState(() {
-      playoffYear = year;
+     // playoffYear = year;
     });
     _updateInitResults();
   }
 
   _updateInitResults(){
     if(playoffYear != null && !_isShowButton){
-      getResultsFromCompetition(int.parse(playoffYear)).then((result){
+      /*getResultsFromCompetition(int.parse(playoffYear)).then((result){
         _updatesResults(result);
         _updateListModel();
         _updateIsShowResults(true);
-      });
+      });*/
     }
   }
 
@@ -350,6 +383,7 @@ class _AdminScreenState extends State<AdminScreen>{
           _newPlayoffsLauncher(), //Bouton d'initialisation ou texte d'information
           _buildInformationText(),
           _buildFormPlayoffs(), //Formulaire d'initialisation de toutes les équipes
+          _buildFilters(),
           _buildTasksList(), //Liste des pronostics idem utilisateur mais en modifiable
         ],
       ),
@@ -459,7 +493,7 @@ class _AdminScreenState extends State<AdminScreen>{
                           if(checkError == null){
                             //FORMULAIRE VALIDE
                             print('OK Launch formulaire rapide');
-                            if(modelInitAdminForm(int.parse(playoffYear), selectedTeamsEast, selectedTeamsWest, datesLimites).length == 8){
+                            if(modelInitAdminForm(2020, selectedTeamsEast, selectedTeamsWest, datesLimites).length == 8){
                               _updateInformationText("Competition init : done");
                               _updateIsShowForm(false);
                               _updateIsShowButton(false);
@@ -515,7 +549,7 @@ class _AdminScreenState extends State<AdminScreen>{
                 Padding(padding: EdgeInsets.all(8)),
                 RaisedButton(
                   onPressed: () {
-                    deleteCompetition(int.parse(playoffYear));
+                    deleteCompetition(2020);
                     _updateInformationText("Competition removed");
                     _updateIsShowButton(true);
                     _updateIsShowResults(false);
@@ -580,24 +614,93 @@ class _AdminScreenState extends State<AdminScreen>{
   }
 
   Widget _buildTasksList() {
-    return new FutureBuilder<String>(builder: (context, snapshot) {
-      print(results.isNotEmpty.toString()+"  "+playoffYear.toString()+"   "+_isShowResults.toString());
-      if (results.isNotEmpty && playoffYear != null && _isShowResults) {
-        return  new Expanded(
-          child: new AnimatedList(
-            initialItemCount: results.length,
-            key: _listKey,
-            itemBuilder: (context, index, animation) {
-              return new ResultRow(
-                result: listModel[index],
-                animation: animation,
+    if(!_isShowButton) {
+      return new Expanded(
+        child: ListView.builder(
+            itemCount: pathPronos.length,
+            itemBuilder: (context, index) {
+              return new ResultRowStream(
+                path: pathPronos[index],
+                playoffYear: "2020playoffs",
+                showFirstRound: _isLevel1,
+                showConfSemi: _isLevel2,
+                showConfFinal: _isLevel3,
+                showFinal: _isLevel4,
               );
-            },
-          ),
-        );
-      }
-      return  Container(padding: EdgeInsets.all(0),);
-    });
+            }
+        ),
+      );
+    }else{
+      return Container(padding: EdgeInsets.all(0),);
+    }
+  }
+
+  Widget _buildFilters(){
+    if(!_isShowButton) {
+      return new Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          FlatButton(onPressed: () {
+            _isLevel_1();
+
+          },
+              padding: EdgeInsets.all(2),
+              child: DecoratedBox(
+              decoration: new BoxDecoration(
+                shape: BoxShape.rectangle,
+                color: _isLevel1 ? Colors.lightGreen : Colors.blueGrey,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text("Level 1", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+              )
+          )),
+          FlatButton(
+              onPressed: () => _isLevel_2(),
+              padding: EdgeInsets.all(2),
+              child: DecoratedBox(
+                decoration: new BoxDecoration(
+                    shape: BoxShape.rectangle,
+                    color: _isLevel2 ? Colors.lightGreen : Colors.blueGrey,
+                    borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text("Level 2", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+                )
+          )),
+          FlatButton(onPressed: () => _isLevel_3(),
+              padding: EdgeInsets.all(2),
+              child: DecoratedBox(
+              decoration: new BoxDecoration(
+                shape: BoxShape.rectangle,
+                color: _isLevel3 ? Colors.lightGreen : Colors.blueGrey,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text("Level 3", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+              )
+          )),
+          FlatButton(onPressed: () => _isLevel_4(),
+              padding: EdgeInsets.all(2),
+              child: DecoratedBox(
+              decoration: new BoxDecoration(
+                shape: BoxShape.rectangle,
+                color: _isLevel4 ? Colors.lightGreen : Colors.blueGrey,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text("Level 4", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
+              )
+          )),
+        ],
+      );
+    }else{
+      return Container(padding: EdgeInsets.all(0),);
+    }
   }
 
 }
