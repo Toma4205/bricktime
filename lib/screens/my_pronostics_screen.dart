@@ -14,6 +14,9 @@ import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/screens/ranking_screen.dart';
 import 'package:bricktime/dbase/user_prono_actions.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:io' show Platform;
+
 
 class MyPronosticsScreen extends StatefulWidget {
   MyPronosticsScreen({Key key, this.auth}) : super(key: key);
@@ -28,6 +31,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
   final double _imageHeight = 256.0;
   final User myuser = User(id: 'id', pseudo: 'pseudo', level: 'level', lastConnexion: 'lastConnexion');
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging(); //Notification FCM
 
   ListModel listModel;
   bool showOnlyPending = false;
@@ -50,6 +54,39 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   ];
 
   CustomPopupMenu _selectedChoices;
+
+  //Notification FCM
+  void firebaseCloudMessaging_Listeners() {
+    if (Platform.isIOS) iOS_Permission();
+
+    _firebaseMessaging.getToken().then((token){
+      print(token);
+    });
+
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        print('on message $message');
+      },
+      onResume: (Map<String, dynamic> message) async {
+        print('on resume $message');
+      },
+      onLaunch: (Map<String, dynamic> message) async {
+        print('on launch $message');
+      },
+    );
+  }
+
+  //Notification FCM
+  void iOS_Permission() {
+    _firebaseMessaging.requestNotificationPermissions(
+        IosNotificationSettings(sound: true, badge: true, alert: true)
+    );
+    _firebaseMessaging.onIosSettingsRegistered
+        .listen((IosNotificationSettings settings)
+    {
+      print("Settings registered: $settings");
+    });
+  }
 
   void _select(CustomPopupMenu choice) {
     setState(() {
@@ -89,6 +126,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     });
 
     _updateInitPronos();
+    firebaseCloudMessaging_Listeners(); //Notification FCM
   }
 
   _updateIsAdmin(String adminId){

@@ -5,6 +5,7 @@ import 'package:bricktime/screens/admin_screen.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
