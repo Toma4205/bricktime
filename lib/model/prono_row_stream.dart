@@ -57,11 +57,13 @@ class PronoRowStreamState extends State<PronoRowStream>{
         stream: FirebaseDatabase.instance.reference().child("users").child(widget.userId).child("pronos").child("2020playoffs").child(widget.path).onValue,
         builder: (BuildContext context,  AsyncSnapshot<Event> event){
           if (!event.hasData) {
-            return new Center(child: new Text('Loading...'));
+            //return new Center(child: new Text('Loading...'));
+            return new Container(padding: EdgeInsets.all(0),);
           }
           
           if(event.data.snapshot.value.toString() == "null"){
-            return new Center(child: new Text('Loading...'));
+            return new Container(padding: EdgeInsets.all(0),);//Center(child: new Text('Loading...',style: new TextStyle(fontSize: 14.0, color: Colors.white),));
+
           }else{
 
 
@@ -77,7 +79,6 @@ class PronoRowStreamState extends State<PronoRowStream>{
               points: pronoJson['points'],
               completed: pronoJson['completed'],
             );
-
 
             if(prono.teamA.toString() != "null" && prono.teamB.toString() != "null"
                 && (widget.showPending ? prono.date_limit.compareTo(DateTime.now()) > 0 : true)){
@@ -106,15 +107,15 @@ class PronoRowStreamState extends State<PronoRowStream>{
                                         children: <Widget>[
                                           new Text(
                                             prono.teamA.toString().substring(0,1)+". "+prono.teamA.toString().substring(1),
-                                            style: new TextStyle(fontSize: 16.0),
+                                            style: new TextStyle(fontSize: 16.0, color: Colors.white),
                                           ),
                                           new Text(
                                             " vs ",
-                                            style: new TextStyle(fontSize: 14.0),
+                                            style: new TextStyle(fontSize: 14.0, color: Colors.white),
                                           ),
                                           new Text(
                                             prono.teamB.toString().substring(0,1)+". "+prono.teamB.toString().substring(1),
-                                            style: new TextStyle(fontSize: 16.0),
+                                            style: new TextStyle(fontSize: 16.0, color: Colors.white),
                                           ),
                                         ],
                                       ),
@@ -161,7 +162,7 @@ class PronoRowStreamState extends State<PronoRowStream>{
                                           prono.score == 4 ?
                                           "waiting for decision"
                                               : (prono.score.toInt() > 4 ? prono.teamB+" win " :  (prono.score < 4.toInt() ? prono.teamA+" win " : ""))+getLabel(prono.score.toInt()),
-                                          style: new TextStyle(fontSize: 14.0, color: prono.score == 4 ? Colors.red : Colors.black),
+                                          style: prono.score == 4 ? new TextStyle(fontSize: 14.0, color: Colors.red) : new TextStyle(fontSize: 14.0, color: Colors.white, fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                       DateTime.now().compareTo(prono.date_limit) < 0 ?
@@ -200,7 +201,7 @@ class PronoRowStreamState extends State<PronoRowStream>{
                                   )
                               ],
                             ),
-                            Divider(thickness: 2,),
+                            Divider(thickness: 2, color: Colors.deepOrange,),
                           ],
                         )
                     ),
@@ -219,11 +220,12 @@ class PronoRowStreamState extends State<PronoRowStream>{
         stream: FirebaseDatabase.instance.reference().child("results").child("2020playoffs").child(widget.path).onValue,
         builder: (BuildContext context,  AsyncSnapshot<Event> event){
           if (!event.hasData) {
-          return new Center(child: new Text('Loading...',style: new TextStyle(fontSize: 14.0, color: Colors.white),));
+          //return new Center(child: new Text('Loading...',style: new TextStyle(fontSize: 14.0, color: Colors.white),));
+            return new Container(padding: EdgeInsets.all(0),);
           }
 
           if(event.data.snapshot.value.toString() == "null"){
-          return new Center(child: new Text('Loading...',style: new TextStyle(fontSize: 14.0, color: Colors.white),));
+          return new Container(padding: EdgeInsets.all(0),);//Center(child: new Text('Loading...',style: new TextStyle(fontSize: 14.0, color: Colors.white),));
           }else{
             var resultJson = event.data.snapshot.value;
              result = new Result(
@@ -257,13 +259,13 @@ class PronoRowStreamState extends State<PronoRowStream>{
         stream: FirebaseDatabase.instance.reference().child("results").child("2020playoffs").child(widget.path).onValue,
         builder: (BuildContext context,  AsyncSnapshot<Event> event) {
           if (!event.hasData) {
-            return new Center(child: new Text('Loading...',
-              style: new TextStyle(fontSize: 14.0, color: Colors.black),));
+            //return new Center(child: new Text('Loading...', style: new TextStyle(fontSize: 14.0, color: Colors.black),));
+            return new Container(padding: EdgeInsets.all(0),);
           }
 
           if (event.data.snapshot.value.toString() == "null") {
-            return new Center(child: new Text('Loading...',
-              style: new TextStyle(fontSize: 14.0, color: Colors.black),));
+            //return new Center(child: new Text('Loading...', style: new TextStyle(fontSize: 14.0, color: Colors.black),));
+            return new Container(padding: EdgeInsets.all(0),);
           } else {
 
             var resultJson = event.data.snapshot.value;
