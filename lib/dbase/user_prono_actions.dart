@@ -5,6 +5,7 @@ import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/dbase/results_actions.dart';
 import 'package:bricktime/dbase/teams_actions.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
 
 /********************************************
 
@@ -28,8 +29,44 @@ setInitialCompetitionPronos(int year, List<Result> results) {
   });
 }
 
+setInProgressCompetitionPronosForUser(String id){
+  int initScore = 4; //4 correspond à Waiting for decision
+  print('setInProgressCompetitionPronosForUser');
+  getActualPlayoffYear().then((year){
+    getResultsFromCompetition(int.parse(year)).then((List<Result> results){
+      results.forEach((Result result){
+          FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child(result.competition_level).update(
+              {
+                'date_first_game' : result.first_game_date.toString(),
+                'teamA' : result.teamA,
+                'teamB' : result.teamB,
+                'winA' : result.scoreA,
+                'winB' : result.scoreB,
+                'completed' : false,
+                'points' : 0,
+                'score' : initScore,
+              });
+      });
+    });
+  });
+}
+
+
+
 setInitialCompetitionPronosForUser(String id, List<Result> results, int year){
   int initScore = 4; //4 correspond à Waiting for decision
+
+  FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child('firstround').child("ESerie1").update(
+      {
+        'date_first_game' : results[0].first_game_date.toString(),
+        'teamA' : results[0].teamA,
+        'teamB' : results[0].teamB,
+        'winA' : results[0].scoreA,
+        'winB' : results[0].scoreB,
+        'completed' : false,
+        'points' : 0,
+        'score' : initScore,
+      });
 
   FirebaseDatabase.instance.reference().child('users').child(id).child('pronos').child(year.toString()+'playoffs').child('firstround').child("ESerie2").update(
       {
@@ -242,9 +279,10 @@ Future<List<Prono>> getPronoFromCompetitionForUser(String id, int year) async {
     List<Prono> pronos = new List();
     Map<dynamic, dynamic> competitionlevelSnap = snapshot.value;
 
-    competitionlevelSnap.forEach((key, value) {
-      Map<dynamic, dynamic> serielevelSnap = value;
-      serielevelSnap.forEach((key1, value1) {
+    if(competitionlevelSnap != null){
+      competitionlevelSnap.forEach((key, value) {
+        Map<dynamic, dynamic> serielevelSnap = value;
+        serielevelSnap.forEach((key1, value1) {
           pronos.add(new Prono(
             teamA: value1['teamB'].toString(),
             teamB: value1['teamB'].toString(),
@@ -255,11 +293,13 @@ Future<List<Prono>> getPronoFromCompetitionForUser(String id, int year) async {
             completed: value1['completed'],
             competition_level: key.toString()+"/"+key1.toString(),
             date_limit: DateTime.tryParse(value1['date_first_game']),));
+        });
       });
-    });
 
-    pronos.sort((a,b) => a.date_limit.compareTo(b.date_limit));
-    print("Length : "+pronos.length.toString());
+      pronos.sort((a,b) => a.date_limit.compareTo(b.date_limit));
+      print("Length : "+pronos.length.toString());
+    }
+
     completer.complete(pronos);
   });
   return completer.future;
