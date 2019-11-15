@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bricktime/auth/facebook.dart';
 import 'package:bricktime/auth/google.dart';
 import 'package:bricktime/auth/authEmail.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:bricktime/screens/my_pronostics_screen.dart';
-import 'package:bricktime/dbase/init_database.dart';
-import 'package:bricktime/dbase/results_actions.dart';
+import 'package:bricktime/screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -29,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen>
   String _emailsignup;
   String _errorMessage = "";
   String _errorMessageSignup = "";
+  bool _showLoading;
 
 
   save_validate() async{
@@ -42,18 +40,22 @@ class _LoginScreenState extends State<LoginScreen>
           userId = await widget.auth.signIn(_email, _password);
           print('Signed in: $userId');
         if (userId.length > 0 && userId != null) {
-
+          updateShowLoading();
+          _buildLoading();
           widget.auth.getCurrentUser().then((user) {
+            updateShowLoading();
             if (user != null) {
               print('SaveValidate Current user is : '+user.toString());
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+                //TABBAR MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+                MaterialPageRoute(builder: (context) => HomeScreen(auth: widget.auth)),
               );
             }
           });
         }
       } catch (e) {
+        updateShowLoading();
         print('Error: $e');
         String erreurType = "Error during SignIn";
         if(e.toString().contains("NOT_FOUND")){
@@ -74,21 +76,26 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (form.validate()) {
       String userId = "";
+      updateShowLoading();
+      _buildLoading();
       try {
         userId = await widget.auth.signUp(_emailsignup, _passwordsignupconfirm);
         print('Signed in: $userId');
         if (userId.length > 0 && userId != null) {
           widget.auth.getCurrentUser().then((user) {
+            updateShowLoading();
             if (user != null) {
               print('SaveValidate Current user is : '+user.toString());
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+                //TABBAR MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+                MaterialPageRoute(builder: (context) => HomeScreen(auth: widget.auth)),
               );
             }
           });
         }
       } catch (e) {
+        updateShowLoading();
         print('Error: $e');
         String erreurType = "Error during Signup";
         if(e.toString().contains("ALREADY")){
@@ -139,9 +146,16 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  updateShowLoading(){
+    setState(() {
+      _showLoading = !_showLoading;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _showLoading = false;
 
 
     //init_db_constantes();
@@ -150,10 +164,26 @@ class _LoginScreenState extends State<LoginScreen>
         print('INITSTATE Current user is : '+user.toString());
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+            //TABBAR MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+            MaterialPageRoute(builder: (context) => HomeScreen(auth: widget.auth)),
           );
       }
     });
+  }
+
+  void _buildLoading(){
+    if(_showLoading){
+       showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Connexion, please wait...'),
+              content: CircularProgressIndicator(
+                valueColor: new AlwaysStoppedAnimation<Color>(Colors.deepOrange),
+              ),
+            );
+          });
+    }
   }
 
   Widget HomePage() {
@@ -161,55 +191,44 @@ class _LoginScreenState extends State<LoginScreen>
       height: MediaQuery.of(context).size.height,
       decoration: BoxDecoration(
         color: Colors.deepOrange,
-        /*image: DecorationImage(
-          colorFilter: new ColorFilter.mode(
-              Colors.black.withOpacity(0.1), BlendMode.dstATop),
-          image: AssetImage('assets/images/mountains.jpg'),
-          fit: BoxFit.cover,
-        ),*/
+        image: DecorationImage(
+          image: AssetImage('images/birds.jpg'),
+          fit: BoxFit.fitHeight,
+          colorFilter: ColorFilter.mode(Colors.black87.withOpacity(0.8), BlendMode.darken),
+        ),
       ),
       child: new Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           Container(
-            padding: EdgeInsets.only(top: 250.0),
-            child: Center(
-              child: Icon(
-                Icons.headset_mic,
-                color: Colors.white,
-                size: 40.0,
-              ),
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.only(top: 20.0),
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height/2),
             child: new Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Text(
-                  "Brick",
+                  "BRICKTIME",
                   style: TextStyle(
+                    fontFamily: 'bballfont',
                     color: Colors.white,
-                    fontSize: 20.0,
+                    //fontWeight: FontWeight.w900,
+                    //letterSpacing: 5,
+                    fontSize: 50.0,
                   ),
-                ),
-                Text(
-                  "Time",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
           new Container(
             width: MediaQuery.of(context).size.width,
-            margin: const EdgeInsets.only(left: 30.0, right: 30.0, top: 150.0),
+            padding: EdgeInsets.only(left: 30.0, right: 30.0, bottom: 20),
             alignment: Alignment.center,
             child: new Row(
               children: <Widget>[
                 new Expanded(
                   child: new OutlineButton(
+                    borderSide: BorderSide(color: Colors.white, width: 3.0),
                     shape: new RoundedRectangleBorder(
                         borderRadius: new BorderRadius.circular(30.0)),
                     color: Colors.redAccent,
@@ -225,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen>
                         children: <Widget>[
                           new Expanded(
                             child: Text(
-                              "SIGN UP",
+                              "CREATE NEW USER",
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                   color: Colors.white,
@@ -242,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           new Container(
             width: MediaQuery.of(context).size.width,
-            margin: const EdgeInsets.only(left: 30.0, right: 30.0, top: 30.0),
+            padding:  EdgeInsets.only(left: 30.0, right: 30.0, bottom: 20),
             alignment: Alignment.center,
             child: new Row(
               children: <Widget>[
@@ -265,12 +284,190 @@ class _LoginScreenState extends State<LoginScreen>
                               "LOGIN",
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                  color: Colors.redAccent,
+                                  color: Colors.black87,
                                   fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          new Container(
+            width: MediaQuery.of(context).size.width,
+            margin: const EdgeInsets.only(left: 30.0, right: 30.0),
+            alignment: Alignment.center,
+            child: Row(
+              children: <Widget>[
+                new Expanded(
+                  child: new Container(
+                    margin: EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(border: Border.all(width: 0.25)),
+                  ),
+                ),
+                Text(
+                  "OR CONNECT WITH",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                new Expanded(
+                  child: new Container(
+                    margin: EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(border: Border.all(width: 0.25)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          new Container(
+            width: MediaQuery.of(context).size.width,
+            margin: const EdgeInsets.only(left: 30.0, right: 30.0, top: 10.0, bottom: 20),
+            child: new Row(
+              children: <Widget>[
+                new Expanded(
+                  child: new Container(
+                    margin: EdgeInsets.only(right: 8.0),
+                    alignment: Alignment.center,
+                    child: new Row(
+                      children: <Widget>[
+                        new Expanded(
+                          child: new FlatButton(
+                            shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(30.0),
+                            ),
+                            color: Color(0Xff3B5998),
+                            onPressed: () => {},
+                            child: new Container(
+                              child: new Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  new Expanded(
+                                    child: new FlatButton(
+                                      onPressed: () {
+                                        updateShowLoading();
+                                        _buildLoading();
+                                        startFacebookLogin().whenComplete((){
+                                          widget.auth.getCurrentUser().then((user) {
+                                            updateShowLoading();
+                                            if (user != null) {
+                                              Navigator.push(
+                                                context,
+                                                //TABBAR MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+                                                MaterialPageRoute(builder: (context) => HomeScreen(auth: widget.auth)),
+                                              );
+                                            }else{
+                                              print('Facebook connexion annulee');
+                                            }
+                                          });
+
+                                        });
+                                      },
+                                      padding: EdgeInsets.only(
+                                        top: 20.0,
+                                        bottom: 20.0,
+                                      ),
+                                      child: new Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                        children: <Widget>[
+                                          Icon(
+                                            const IconData(0xea90,
+                                                fontFamily: 'icomoon'),
+                                            color: Colors.white,
+                                            size: 15.0,
+                                          ),
+                                          Text(
+                                            "FACEBOOK",
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                new Expanded(
+                  child: new Container(
+                    margin: EdgeInsets.only(left: 8.0),
+                    alignment: Alignment.center,
+                    child: new Row(
+                      children: <Widget>[
+                        new Expanded(
+                          child: new FlatButton(
+                            shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(30.0),
+                            ),
+                            color: Color(0Xffdb3236),
+                            onPressed: () => {},
+                            child: new Container(
+                              child: new Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  new Expanded(
+                                    child: new FlatButton(
+                                      onPressed: (){
+                                        signInWithGoogle().whenComplete(() {
+                                          _buildLoading();
+                                          widget.auth.getCurrentUser().then((user) {
+                                            updateShowLoading();
+                                            if (user != null) {
+                                              Navigator.push(
+                                                context,
+                                                //TABBAR MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
+                                                MaterialPageRoute(builder: (context) => HomeScreen(auth: widget.auth)),
+                                              );
+                                            }else{
+                                              print('Google connexion annulee');
+                                            }
+                                          });
+                                        });
+                                      },
+                                      padding: EdgeInsets.only(
+                                        top: 20.0,
+                                        bottom: 20.0,
+                                      ),
+                                      child: new Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                        children: <Widget>[
+                                          Icon(
+                                            const IconData(0xea88,
+                                                fontFamily: 'icomoon'),
+                                            color: Colors.white,
+                                            size: 15.0,
+                                          ),
+                                          Text(
+                                            "GOOGLE",
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -303,7 +500,7 @@ class _LoginScreenState extends State<LoginScreen>
                 padding: EdgeInsets.all(120.0),
                 child: Center(
                   child: Icon(
-                    Icons.headset_mic,
+                    Icons.verified_user,
                     color: Colors.redAccent,
                     size: 50.0,
                   ),
@@ -433,9 +630,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         textAlign: TextAlign.end,
                       ),
-                      onPressed: () => {
-                        empty_error_message,
-                        reset_password(),
+                      onPressed: ()  {
+                        empty_error_message;
+                        reset_password();
                       },
                     ),
                   ),
@@ -454,8 +651,8 @@ class _LoginScreenState extends State<LoginScreen>
                           borderRadius: new BorderRadius.circular(30.0),
                         ),
                         color: Colors.redAccent,
-                        onPressed: () => {
-                          save_validate(),
+                        onPressed: ()  {
+                          save_validate();
                         }, //AJOUTER Passage à la page d'accueil
                         child: new Container(
                           padding: const EdgeInsets.symmetric(
@@ -482,177 +679,6 @@ class _LoginScreenState extends State<LoginScreen>
                   ],
                 ),
               ),
-              new Container(
-                width: MediaQuery.of(context).size.width,
-                margin: const EdgeInsets.only(left: 30.0, right: 30.0, top: 20.0),
-                alignment: Alignment.center,
-                child: Row(
-                  children: <Widget>[
-                    new Expanded(
-                      child: new Container(
-                        margin: EdgeInsets.all(8.0),
-                        decoration: BoxDecoration(border: Border.all(width: 0.25)),
-                      ),
-                    ),
-                    Text(
-                      "OR CONNECT WITH",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    new Expanded(
-                      child: new Container(
-                        margin: EdgeInsets.all(8.0),
-                        decoration: BoxDecoration(border: Border.all(width: 0.25)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              new Container(
-                width: MediaQuery.of(context).size.width,
-                margin: const EdgeInsets.only(left: 30.0, right: 30.0, top: 20.0),
-                child: new Row(
-                  children: <Widget>[
-                    new Expanded(
-                      child: new Container(
-                        margin: EdgeInsets.only(right: 8.0),
-                        alignment: Alignment.center,
-                        child: new Row(
-                          children: <Widget>[
-                            new Expanded(
-                              child: new FlatButton(
-                                shape: new RoundedRectangleBorder(
-                                  borderRadius: new BorderRadius.circular(30.0),
-                                ),
-                                color: Color(0Xff3B5998),
-                                onPressed: () => {},
-                                child: new Container(
-                                  child: new Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: <Widget>[
-                                      new Expanded(
-                                        child: new FlatButton(
-                                          onPressed: ()=>{
-                                          startFacebookLogin().whenComplete((){
-                                            widget.auth.getCurrentUser().then((user) {
-                                              if (user != null) {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
-                                                );
-                                              }else{
-                                                print('Facebook connexion annulee');
-                                              }
-                                            });
-
-                                          }),
-                                          },
-                                          padding: EdgeInsets.only(
-                                            top: 20.0,
-                                            bottom: 20.0,
-                                          ),
-                                          child: new Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                            children: <Widget>[
-                                              Icon(
-                                                const IconData(0xea90,
-                                                    fontFamily: 'icomoon'),
-                                                color: Colors.white,
-                                                size: 15.0,
-                                              ),
-                                              Text(
-                                                "FACEBOOK",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    new Expanded(
-                      child: new Container(
-                        margin: EdgeInsets.only(left: 8.0),
-                        alignment: Alignment.center,
-                        child: new Row(
-                          children: <Widget>[
-                            new Expanded(
-                              child: new FlatButton(
-                                shape: new RoundedRectangleBorder(
-                                  borderRadius: new BorderRadius.circular(30.0),
-                                ),
-                                color: Color(0Xffdb3236),
-                                onPressed: () => {},
-                                child: new Container(
-                                  child: new Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: <Widget>[
-                                      new Expanded(
-                                        child: new FlatButton(
-                                          onPressed: ()=>{
-                                          signInWithGoogle().whenComplete(() {
-                                            widget.auth.getCurrentUser().then((user) {
-                                              if (user != null) {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(builder: (context) => MyPronosticsScreen(auth: widget.auth)),
-                                                );
-                                              }else{
-                                                print('Google connexion annulee');
-                                              }
-                                            });
-                                          }),
-                                          },
-                                          padding: EdgeInsets.only(
-                                            top: 20.0,
-                                            bottom: 20.0,
-                                          ),
-                                          child: new Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                            children: <Widget>[
-                                              Icon(
-                                                const IconData(0xea88,
-                                                    fontFamily: 'icomoon'),
-                                                color: Colors.white,
-                                                size: 15.0,
-                                              ),
-                                              Text(
-                                                "GOOGLE",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
             ],
           ),
         ),
@@ -728,7 +754,7 @@ class _LoginScreenState extends State<LoginScreen>
                 padding: EdgeInsets.all(100.0),
                 child: Center(
                   child: Icon(
-                    Icons.local_pizza,
+                    Icons.stars,
                     color: Colors.redAccent,
                     size: 50.0,
                   ),
@@ -834,7 +860,9 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         controller: _firstPasswordController,
                         validator: (value) => value.isEmpty ? 'Password can\'t be empty' : null,
-                        onSaved: (value) => _passwordsignup = value.trim(),
+                        onSaved: (value) {
+                          _passwordsignup = value.trim();
+                        }
                       ),
                     ),
                   ],
@@ -943,7 +971,7 @@ class _LoginScreenState extends State<LoginScreen>
                             children: <Widget>[
                               new Expanded(
                                 child: Text(
-                                  "SIGN UP",
+                                  "CREATE NEW PLAYER",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                       color: Colors.white,
@@ -987,15 +1015,17 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        height: MediaQuery.of(context).size.height,
+    return Scaffold(
+      body: Container(
+          height: MediaQuery.of(context).size.height,
 
-        child: PageView(
-        //child: ListView(
-          controller: _controller,
-          physics: new AlwaysScrollableScrollPhysics(),
-          children: <Widget>[LoginPage(), HomePage(), SignupPage()],
-          scrollDirection: Axis.horizontal,
-        ));
+          child: PageView(
+            //child: ListView(
+            controller: _controller,
+            physics: new AlwaysScrollableScrollPhysics(),
+            children: <Widget>[LoginPage(), HomePage(), SignupPage()],
+            scrollDirection: Axis.horizontal,
+          )),
+    );
   }
 }
