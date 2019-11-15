@@ -241,9 +241,9 @@ Future<List<Result>> getResultsFromCompetition(int year) async {
         ));
       });
     });
-
     results.sort((a,b) => b.first_game_date.compareTo(a.first_game_date));
     completer.complete(results);
+
   });
   return completer.future;
 }
