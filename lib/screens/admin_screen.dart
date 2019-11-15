@@ -17,6 +17,7 @@ import 'package:bricktime/model/result_model.dart';
 import 'package:bricktime/model/result_row.dart';
 import 'package:bricktime/model/result_row_stream.dart';
 import 'package:bricktime/dbase/rules_actions.dart';
+import 'package:bricktime/screens/home_screen.dart';
 
 //import 'package:bricktime/model/initial_result.dart';
 
@@ -293,7 +294,7 @@ class _AdminScreenState extends State<AdminScreen>{
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 32.0),
       child: new Row(
         children: <Widget>[
-          MenuButton(),
+          //MenuButton(),
           new Expanded(
             child: new Padding(
               padding: const EdgeInsets.only(left: 16.0),
@@ -307,12 +308,12 @@ class _AdminScreenState extends State<AdminScreen>{
               ),
             ),
           ),
-          new Icon(Icons.linear_scale, color: Colors.white),
+          MenuButton(),
         ],
       ),
     );
   }
-
+/*
   Widget MenuButton(){
     return new PopupMenuButton<CustomPopupMenu>(
         icon: Icon(Icons.menu, color: Colors.black,),
@@ -333,6 +334,18 @@ class _AdminScreenState extends State<AdminScreen>{
           }).toList();
         }
     );
+  }*/
+
+  Widget MenuButton(){
+      return IconButton(
+          icon: Icon(Icons.settings, color: Colors.black),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen(auth: widget.auth)),
+            );
+          }
+      );
   }
 
   Widget _buildProfileRow() {
