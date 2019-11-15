@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:bricktime/screens/animated_fab.dart';
 import 'package:bricktime/screens/diagonal_clipper.dart';
 import 'package:bricktime/model/list_model.dart';
 import 'package:bricktime/model/prono_row_stream.dart';
 import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/auth/authEmail.dart';
-import 'package:bricktime/login_screen.dart';
 import 'package:bricktime/screens/custom_popup_menu.dart';
 import 'package:bricktime/dbase/user_actions.dart';
 import 'package:bricktime/model/user.dart';
 import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/screens/admin_screen.dart';
-import 'package:bricktime/screens/ranking_screen.dart';
 import 'package:bricktime/dbase/user_prono_actions.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'dart:io' show Platform;
+import 'package:bricktime/dbase/storage_actions.dart';
 
 
 class MyPronosticsScreen extends StatefulWidget {
@@ -29,9 +25,8 @@ class MyPronosticsScreen extends StatefulWidget {
 
 class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
-  final double _imageHeight = 256.0;
+  final double _imageHeight = 210.0;
   final User myuser = User(id: 'id', pseudo: 'pseudo', level: 'level', lastConnexion: 'lastConnexion');
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging(); //Notification FCM
 
   ListModel listModel;
   bool showOnlyPending = false;
@@ -53,72 +48,12 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     CustomPopupMenu(title: 'Sign out', icon: Icons.settings),
   ];
 
-  CustomPopupMenu _selectedChoices;
-
-  //Notification FCM
-  void firebaseCloudMessaging_Listeners() {
-    if (Platform.isIOS) iOS_Permission();
-
-    _firebaseMessaging.getToken().then((token){
-      print(token);
-    });
-
-    _firebaseMessaging.configure(
-      onMessage: (Map<String, dynamic> message) async {
-        print('on message $message');
-      },
-      onResume: (Map<String, dynamic> message) async {
-        print('on resume $message');
-      },
-      onLaunch: (Map<String, dynamic> message) async {
-        print('on launch $message');
-      },
-    );
-  }
-
-  //Notification FCM
-  void iOS_Permission() {
-    _firebaseMessaging.requestNotificationPermissions(
-        IosNotificationSettings(sound: true, badge: true, alert: true)
-    );
-    _firebaseMessaging.onIosSettingsRegistered
-        .listen((IosNotificationSettings settings)
-    {
-      print("Settings registered: $settings");
-    });
-  }
-
-  void _select(CustomPopupMenu choice) {
-    setState(() {
-      _selectedChoices = choice;
-    });
-    print(choice.title);
-    if(choice.title == 'Sign out'){
-      widget.auth.signOut();
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen(auth: widget.auth)),
-      );
-    }else if(choice.title == 'Admin'){
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => AdminScreen(auth: widget.auth)),
-      );
-    }else if(choice.title == 'My Pronostics'){
-      //On est déjà dessus
-    } else if (choice.title == 'Ranking') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Ranking(auth: widget.auth)),
-      );
-    }
-  }
 
 
   @override
   void initState() {
     super.initState();
-
+    print("init MyPronoStics Screen");
     widget.auth.getCurrentUser().then((user){
       getUserInfo(user).then(_updateUserInfo);
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
@@ -126,7 +61,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     });
 
     _updateInitPronos();
-    firebaseCloudMessaging_Listeners(); //Notification FCM
+
   }
 
   _updateIsAdmin(String adminId){
@@ -189,15 +124,20 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-      body: new Stack(
-        children: <Widget>[
-          _buildTimeline(),
-          _buildIamge(),
-          _buildTopHeader(),
-          _buildProfileRow(),
-          _buildBottomPart(),
-          _buildFilterButton(),
-        ],
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.black87,
+        ),
+        child: new Stack(
+          children: <Widget>[
+            _buildTimeline(),
+            _buildIamge(),
+            _buildTopHeader(),
+            _buildProfileRow(),
+            _buildBottomPart(),
+            _buildFilterButton(),
+          ],
+        ),
       ),
     );
   }
@@ -228,7 +168,8 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     return new Positioned.fill(
       bottom: null,
       child: new ClipPath(
-        clipper: new DialogonalClipper(),
+        clipper: new DialogonalClipper(
+        ),
         child: new Image.asset(
           'images/birds.jpg',
           fit: BoxFit.cover,
@@ -244,81 +185,177 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
     return new Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 32.0),
       child: new Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           MenuButton(),
-          new Expanded(
-            child: new Padding(
-              padding: const EdgeInsets.only(left: 16.0),
-              child: new Text(
-                "Brick Time",
-                style: new TextStyle(
-                    fontSize: 30.0,
-                    letterSpacing: 4,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800),
-              ),
-            ),
-          ),
-          new Icon(Icons.linear_scale, color: Colors.white),
         ],
       ),
     );
   }
 
   Widget MenuButton(){
-    return new PopupMenuButton<CustomPopupMenu>(
-      icon: Icon(Icons.menu, color: Colors.white,),
-      elevation: 3.2,
-      //initialValue: MenuList.values.elementAt(0),
-      onCanceled: () {
-        print('You have not chossed anything');
-      },
-      offset: Offset(25,50),
-      color: Colors.white,
-      onSelected: _select,
-      itemBuilder: (BuildContext context) {
-        return choices.map((CustomPopupMenu choice) {
-          return PopupMenuItem<CustomPopupMenu>(
-            value: choice,
-            child: Text(choice.title, style: TextStyle(color: Colors.deepOrange),),
-          );
-        }).toList();
-      }
-    );
+    if(isAdmin){
+     return IconButton(
+         icon: Icon(Icons.settings, color: Colors.white),
+         onPressed: () {
+           Navigator.push(
+             context,
+             MaterialPageRoute(builder: (context) => AdminScreen(auth: widget.auth)),
+           );
+         }
+     );
+    }else{
+      //return new Container(padding: EdgeInsets.all(0),);
+      return IconButton(
+          icon: Icon(Icons.help, color: Colors.white),
+          onPressed: () {
+            showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: Text('Rules'),
+                    content: SingleChildScrollView(
+                     child: Text("The purpose of this game is to compete for the best NBA playoff predictions 🏀."
+                         +"\nThis is a game for fun. 🤪"
+                         +"\n\nHow to play:"
+                         +"\n📌 You need to lock your predictions before the starting time of each game"
+                         +"\n📌 The predictions of every participants are displayed as soon as the serie starts\n"
+                         +"\n\nPoints calculation:"
+                         +"\n📌 For the First Round, Right Winner = 2 pts / Right Wins Number = 4 pts."
+                         +"\n📌 For Conference semi-Finals, Right Winner = 3 pts / Right Wins Number = 5 pts."
+                         +"\n📌 For Conference Finals, Right Winner = 5 pts / Right Wins Number = 8 pts."
+                         +"\n📌 For Finals, Right Winner = 6 pts / Right Wins Number = 10 pts."
+                         +"\n\n🏆 The one with the most points at the end of the playoff is the Winner.)",
+                       textAlign: TextAlign.justify,
+                     ),
+                    ),
+                  );
+                });
+          }
+      );
+    }
   }
 
 
+  Widget _buildAvatarStream(){
+    return StreamBuilder(
+        stream: FirebaseDatabase.instance.reference().child("users").child(myuser.id).child("infos").child("avatar").onValue,
+        builder: (BuildContext context,  AsyncSnapshot<Event> event) {
+          if (!event.hasData) {
+            return new Center(child: new Text('Loading...'));
+          }
+
+          if (event.data.snapshot.value.toString() == "null") {
+            return new CircleAvatar(
+              minRadius: 28.0,
+              maxRadius: 28.0,
+              backgroundImage: new AssetImage('images/avatar'),
+            );
+          } else {
+            return _getNetworkImage(event.data.snapshot.value.toString());
+          }
+        }
+    );
+  }
+
+  Widget _getNetworkImage(String avatar){
+    return StreamBuilder(
+        stream: getImage(avatar).asStream(),
+        builder: (BuildContext context, AsyncSnapshot<String> event) {
+
+          if (event.data.toString() == "null") {
+            return new CircleAvatar(
+              minRadius: 28.0,
+              maxRadius: 28.0,
+              backgroundImage: new AssetImage('images/avatar'),
+            );
+          } else {
+            return new CircleAvatar(
+              minRadius: 28.0,
+              maxRadius: 28.0,
+              backgroundImage: !avatar.toString().contains("images")
+                  ? new NetworkImage(event.data.toString())
+                  : new AssetImage("images/avatar"),
+            );
+          }
+        }
+    );
+  }
+
+  Widget _buildPseudoStream(){
+    return StreamBuilder(
+        stream: FirebaseDatabase.instance.reference().child("users").child(myuser.id).child("infos").child("pseudo").onValue,
+        builder: (BuildContext context,  AsyncSnapshot<Event> event) {
+          if (!event.hasData) {
+            return new Center(child: new Text('Loading...'));
+          }
+
+          if (event.data.snapshot.value.toString() == "null") {
+            return new Text(
+              'pseudo',
+              style: new TextStyle(
+                  fontSize: 26.0,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400),
+            );
+          } else {
+            return new Text(
+              event.data.snapshot.value.toString(),
+              style: new TextStyle(
+                  fontSize: 26.0,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400),
+            );
+          }
+        }
+
+    );
+  }
+
+  Widget _buildLevelStream(){
+    return StreamBuilder(
+        stream: FirebaseDatabase.instance.reference().child("users").child(myuser.id).child("infos").child("level").onValue,
+        builder: (BuildContext context,  AsyncSnapshot<Event> event) {
+          if (!event.hasData) {
+            return new Center(child: new Text('Loading...'));
+          }
+
+          if (event.data.snapshot.value.toString() == "null") {
+            return new Text(
+              'level',
+              style: new TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400),
+            );
+          } else {
+            return new Text(
+              event.data.snapshot.value.toString(),
+              style: new TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w300),
+            );
+          }
+        }
+
+    );
+  }
 
   Widget _buildProfileRow() {
     return new Padding(
       padding: new EdgeInsets.only(left: 16.0, top: _imageHeight / 2.5),
       child: new Row(
         children: <Widget>[
-          new CircleAvatar(
-            minRadius: 28.0,
-            maxRadius: 28.0,
-            backgroundImage: new AssetImage('images/avatar.jpeg'),
-          ),
+          _buildAvatarStream(),
           new Padding(
             padding: const EdgeInsets.only(left: 16.0),
             child: new Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                new Text(
-                  myuser.pseudo != null ? myuser.pseudo : 'pseudo',
-                  style: new TextStyle(
-                      fontSize: 26.0,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w400),
-                ),
-                new Text(
-                  myuser.level,
-                  style: new TextStyle(
-                      fontSize: 14.0,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w300),
-                ),
+                _buildPseudoStream(),
+                _buildLevelStream(),
               ],
             ),
           ),
@@ -364,7 +401,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
         children: <Widget>[
           new Text(
             'My Predictions',
-            style: new TextStyle(fontSize: 34.0),
+            style: new TextStyle(fontSize: 34.0, color: Colors.white),
           ),
           new Text(
             'NBA Playoff ',
@@ -378,7 +415,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
 
   Widget _buildTimeline() {
     return new Positioned(
-      top: 0.0,
+      top: _imageHeight,
       bottom: 0.0,
       left: 32.0,
       child: new Container(
@@ -397,7 +434,10 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
           }
 
           if(event.data.snapshot.value.toString() == "null"){
-          return new Center(child: new Text('Loading...'));
+          //return new Center(child: new Text('No current prediction...', style: TextStyle(color: Colors.grey),));
+          return new Center(child: CircularProgressIndicator(
+            valueColor: new AlwaysStoppedAnimation<Color>(Colors.deepOrange),
+          ),);
           }else{
             int totalPoints = 0;
             Map<dynamic, dynamic> competitionlevelSnap = event.data.snapshot.value;
