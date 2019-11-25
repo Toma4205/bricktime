@@ -9,6 +9,7 @@ import 'package:bricktime/dbase/constantes_actions.dart';
 import 'package:bricktime/dbase/user_prono_actions.dart';
 import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/model/list_model.dart';
+import 'package:bricktime/screens/results_screen.dart';
 
 import 'dart:io' show Platform;
 
@@ -138,14 +139,18 @@ class _HomeScreenState extends State<HomeScreen>{
   @override
   Widget build(BuildContext context) {
     return new DefaultTabController(
-        length: 3,
+        length: 5,
         child: new Scaffold(
           body: TabBarView(
             children: [
               MyPronosticsScreen(auth: widget.auth),
               new Container(
+                color: Colors.yellowAccent,
+              ),
+              new Container(
                 color: Colors.orange,
               ),
+              ResultsScreen(user: myuser, auth: widget.auth),
               MyProfileScreen(user: myuser, auth: widget.auth),
             ],
           ),
@@ -155,7 +160,13 @@ class _HomeScreenState extends State<HomeScreen>{
                   icon: new Icon(Icons.home, size: 30,),
                 ),
                 Tab(
+                  icon: new Icon(Icons.people, size: 30,),
+                ),
+                Tab(
                   icon: new Icon(Icons.format_list_numbered, size: 30),
+                ),
+                Tab(
+                  icon: new Icon(Icons.whatshot, size: 30,),
                 ),
                 Tab(
                   icon: new Icon(Icons.account_circle, size: 30,),

@@ -105,8 +105,14 @@ class PronoRowStreamState extends State<PronoRowStream>{
                                     children: <Widget>[
                                       new Row(
                                         children: <Widget>[
+                                          new CircleAvatar(
+                                            backgroundColor: Colors.transparent,
+                                            minRadius: 16.0,
+                                            maxRadius: 16.0,
+                                            backgroundImage: new AssetImage('images/teams_logo/'+prono.teamA.toLowerCase()+".png"),
+                                          ),
                                           new Text(
-                                            prono.teamA.toString().substring(0,1)+". "+prono.teamA.toString().substring(1),
+                                            " "+prono.teamA.toString().substring(0,1)+". "+prono.teamA.toString().substring(1),
                                             style: new TextStyle(fontSize: 16.0, color: Colors.white),
                                           ),
                                           new Text(
@@ -114,8 +120,14 @@ class PronoRowStreamState extends State<PronoRowStream>{
                                             style: new TextStyle(fontSize: 14.0, color: Colors.white),
                                           ),
                                           new Text(
-                                            prono.teamB.toString().substring(0,1)+". "+prono.teamB.toString().substring(1),
+                                            prono.teamB.toString().substring(0,1)+". "+prono.teamB.toString().substring(1)+" ",
                                             style: new TextStyle(fontSize: 16.0, color: Colors.white),
+                                          ),
+                                          new CircleAvatar(
+                                            backgroundColor: Colors.transparent,
+                                            minRadius: 16.0,
+                                            maxRadius: 16.0,
+                                            backgroundImage: new AssetImage('images/teams_logo/'+prono.teamB.toLowerCase()+".png"),
                                           ),
                                         ],
                                       ),
