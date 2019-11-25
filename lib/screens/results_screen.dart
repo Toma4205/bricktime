@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:bricktime/model/result.dart';
 import 'package:bricktime/model/player.dart';
 import 'package:bricktime/model/player_real_game_stats.dart';
+import 'dart:math';
 
 
 class ResultsScreen extends StatefulWidget {
@@ -283,7 +284,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
       squadA.forEach((playerStat){
         List<DataCell> dataCell = new List();
-        dataCell.add(DataCell(Text(playerStat.short_name, style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)));
+        dataCell.add(DataCell(Text(playerStat.short_name.substring(0,min(playerStat.short_name.length, 22)), style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)));
         dataCell.add(DataCell(Text(playerStat.last_game_real_stats.min.toString())));
         dataCell.add(DataCell(Text(playerStat.last_game_real_stats.pts.toString())));
         dataCell.add(DataCell(Text(playerStat.last_game_real_stats.reb.toString())));
@@ -297,7 +298,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
       return Container(
           color: couleur,
-          child:DataTable(columns: colonnesDom, rows: rowDom, columnSpacing: 0, headingRowHeight: 20, dataRowHeight: 20,),
+          child:DataTable(columns: colonnesDom, rows: rowDom, columnSpacing: 0, headingRowHeight: 20, dataRowHeight: 20, horizontalMargin: 5,),
       );
     }
   }

@@ -142,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen>{
         length: 5,
         child: new Scaffold(
           body: TabBarView(
+            physics: NeverScrollableScrollPhysics(),
             children: [
               MyPronosticsScreen(auth: widget.auth),
               new Container(
@@ -160,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen>{
                   icon: new Icon(Icons.home, size: 30,),
                 ),
                 Tab(
-                  icon: new Icon(Icons.people, size: 30,),
+                  icon: new Icon(Icons.videogame_asset, size: 30,),
                 ),
                 Tab(
                   icon: new Icon(Icons.format_list_numbered, size: 30),
@@ -169,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen>{
                   icon: new Icon(Icons.whatshot, size: 30,),
                 ),
                 Tab(
-                  icon: new Icon(Icons.account_circle, size: 30,),
+                  icon: new Icon(Icons.fastfood, size: 30,),
                 ),
               ],
               labelColor: Colors.deepOrange,
