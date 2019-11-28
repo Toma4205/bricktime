@@ -1,3 +1,4 @@
+import 'package:bricktime/screens/ranking_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:bricktime/screens/my_pronostics_screen.dart';
@@ -143,9 +144,7 @@ class _HomeScreenState extends State<HomeScreen>{
           body: TabBarView(
             children: [
               MyPronosticsScreen(auth: widget.auth),
-              new Container(
-                color: Colors.orange,
-              ),
+              RankingScreen(auth: widget.auth),
               MyProfileScreen(user: myuser, auth: widget.auth),
             ],
           ),

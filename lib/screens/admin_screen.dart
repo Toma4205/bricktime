@@ -100,7 +100,7 @@ class _AdminScreenState extends State<AdminScreen>{
     } else if (choice.title == 'Ranking') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => Ranking(auth: widget.auth)),
+        MaterialPageRoute(builder: (context) => RankingScreen(auth: widget.auth)),
       );
     }
   }

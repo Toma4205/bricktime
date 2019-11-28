@@ -106,3 +106,63 @@ Future<User> getUserInfo(String id) async {
   });
   return completer.future;
 }
+
+Future<List<User>> getUsersList(int year) async {
+  Completer<List<User>> completer = new Completer<List<User>>();
+
+  FirebaseDatabase.instance.reference().child("users").once().then((DataSnapshot snapshot){
+    Map<dynamic, dynamic> usersSnapshot = snapshot.value;
+    List<User> users = new List();
+
+    if(usersSnapshot != null){
+      usersSnapshot.forEach((index, data){
+        Map<dynamic, dynamic> infosSnap = data;
+        infosSnap.forEach((index1, data1) async {
+          if(data1['pseudo'] != null){
+            computeScore(index, year.toString()+"playoffs").then((score){
+              users.add(new User(
+                  pseudo: data1['pseudo'].toString(),
+                  level: data1['level'].toString(),
+                  avatar: data1['avatar'].toString(),
+                  totalScore: score
+              ));
+            });
+
+                 // print(data1['pseudo'] + " = " + score.toString());
+          }
+        });
+      });
+    }
+
+    completer.complete(users);
+  });
+
+  return completer.future;
+}
+
+Future<int> computeScore(String id, String playoffsYear) async {
+  Completer<int> completer = new Completer<int>();
+  int totalPoints = 0;
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("users")
+      .child(id)
+      .child('pronos')
+      .child(playoffsYear)
+      .once()
+      .then((DataSnapshot snapshot) {
+
+        Map<dynamic, dynamic> playoffsPronosByUserSnap = snapshot.value;
+        playoffsPronosByUserSnap.forEach((key, data){
+          Map<dynamic, dynamic> serieByConf = data;
+          serieByConf.forEach((key1, data1){
+            totalPoints += data1["points"];
+          });
+        });
+
+        completer.complete(totalPoints);
+      });
+
+  return completer.future;
+}

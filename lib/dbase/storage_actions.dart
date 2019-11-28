@@ -34,4 +34,3 @@ Future<List<String>> getAllPicURL() async {
   });
   return completer.future;
 }
-
