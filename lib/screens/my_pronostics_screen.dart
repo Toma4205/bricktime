@@ -67,6 +67,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   _updateIsAdmin(String adminId){
     if(adminId.contains(myuser.id))
       {
+        if (!mounted) return;
         setState(() {
           isAdmin = true;
           choices.add(new CustomPopupMenu(title: 'Admin', icon: Icons.settings));
@@ -75,6 +76,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   _updateUserInfo(User user){
+    if (!mounted) return;
     setState(() {
       myuser.pseudo = user.pseudo;
       myuser.level = user.level;
@@ -84,6 +86,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   _updateActualPlayoffsYear(String year){
+    if (!mounted) return;
     setState(() {
       playoffYear = year;
     });
@@ -101,6 +104,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   _updatesPronos(List<Prono> pronoList){
+    if (!mounted) return;
     setState(() {
       print(pronos.toString());
       if(pronos.isNotEmpty) {
@@ -115,6 +119,7 @@ class _MyPronosticsScreenState extends State<MyPronosticsScreen> {
   }
 
   _updateListModel(){
+    if (!mounted) return;
     setState(() {
       listModel = new ListModel(_listKey, pronos);
     });

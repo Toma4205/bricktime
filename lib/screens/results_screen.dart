@@ -54,7 +54,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             children: <Widget>[
               Icon(Icons.whatshot, color: Colors.deepOrange),
               Padding(padding: EdgeInsets.symmetric(horizontal: 10),),
-              Text("Last Results", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.deepOrange),),
+              Text("Fresh Results", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.deepOrange),),
             ],
           ),
         ),
@@ -69,7 +69,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
           if (!event.hasData) {
             return new Center(child: new Text('Loading...'));
           }
-
 
           if (event.data.snapshot.value.toString() == "null") {
             return new Expanded(
@@ -105,8 +104,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
             var today = DateTime.now();
             var yesterday = DateTime.now().subtract(Duration(days:1));
-            var labelToday = today.year.toString()+"-"+today.month.toString()+"-"+today.day.toString();
-            var labelYesterday = yesterday.year.toString()+"-"+yesterday.month.toString()+"-"+yesterday.day.toString();
+            var labelToday = today.year.toString()+"-"+(today.month < 10 ? "0" : "")+today.month.toString()+"-"+(today.day < 10 ? "0" : "")+today.day.toString();
+            var labelYesterday = yesterday.year.toString()+"-"+(yesterday.month < 10 ? "0" : "")+yesterday.month.toString()+"-"+(yesterday.day < 10 ? "0" : "")+yesterday.day.toString();
             var gamesNumber = 0;
             List<Result> resultsList = new List();
 
@@ -117,7 +116,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 gamesNumber += games.length;
                 games.forEach((keyGame, valueGame){
 
-                  if(valueGame['status'] == 'Final'){
+                  if(valueGame['status'] == 'Final' && valueGame['home_team_stats'] != null){
                     List<Player> home_squad = new List();
                     List<Player> visitor_squad = new List();
 
@@ -210,7 +209,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           +")";
                       color = resultsList[index].status == 'Final' ? Colors.deepOrange
                               : resultsList[index].status.contains(":") ? Colors.blueGrey : Colors.orange;//Color.lerp(Colors.orangeAccent, Colors.deepOrange, 1-(1/gradient*index));
-                      if(resultsList[index].status == 'Final'){
+                      if(resultsList[index].status == 'Final' && resultsList[index].squadA != null){
                         resultsList[index].squadA.sort((a, b) => b.last_game_real_stats.min.compareTo(a.last_game_real_stats.min));
                         resultsList[index].squadB.sort((a, b) => b.last_game_real_stats.min.compareTo(a.last_game_real_stats.min));
                         squadA.addAll(resultsList[index].squadA);
@@ -284,7 +283,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
       squadA.forEach((playerStat){
         List<DataCell> dataCell = new List();
-        dataCell.add(DataCell(Text(playerStat.short_name.substring(0,min(playerStat.short_name.length, 22)), style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)));
+        dataCell.add(DataCell(Text(playerStat.short_name.substring(0,min(playerStat.short_name.length, 18)), style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)));
         dataCell.add(DataCell(Text(playerStat.last_game_real_stats.min.toString())));
         dataCell.add(DataCell(Text(playerStat.last_game_real_stats.pts.toString())));
         dataCell.add(DataCell(Text(playerStat.last_game_real_stats.reb.toString())));
@@ -296,9 +295,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
       });
 
 
-      return Container(
-          color: couleur,
-          child:DataTable(columns: colonnesDom, rows: rowDom, columnSpacing: 0, headingRowHeight: 20, dataRowHeight: 20, horizontalMargin: 5,),
+      return SizedBox(
+          width: MediaQuery.of(context).size.width,
+          child: Container(
+            color: couleur,
+            child:DataTable(columns: colonnesDom, rows: rowDom, columnSpacing: 0, headingRowHeight: 20, dataRowHeight: 20, horizontalMargin: 5,),
+          )
       );
     }
   }

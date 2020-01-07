@@ -10,8 +10,9 @@ import 'package:bricktime/dbase/user_prono_actions.dart';
 import 'package:bricktime/model/prono.dart';
 import 'package:bricktime/model/list_model.dart';
 import 'package:bricktime/screens/results_screen.dart';
-
+import 'package:bricktime/screens/my_fantasy_screen.dart';
 import 'dart:io' show Platform;
+//import 'package:bricktime/dbase/init_database.dart';
 
 class HomeScreen extends StatefulWidget{
   HomeScreen({Key key, this.auth}) : super(key: key);
@@ -22,11 +23,12 @@ class HomeScreen extends StatefulWidget{
   _HomeScreenState createState() => new _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>{
+class _HomeScreenState extends State<HomeScreen>  with TickerProviderStateMixin{
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging(); //Notification FCM
   final User myuser = User(id: 'id', pseudo: 'pseudo', level: 'level', lastConnexion: 'lastConnexion');
   final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
-
+  TabController _tabController;
+  
   String playoffYear;
   ListModel listModel;
   bool showOnlyPending = false;
@@ -37,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen>{
   @override
   void initState() {
     super.initState();
+    //init_db_players();
+    _tabController = TabController(length: 5, vsync: this);
     widget.auth.getCurrentUser().then((user){
       getUserInfo(user).then(_updateUserInfo);
       getActualPlayoffYear().then((_updateActualPlayoffsYear));
@@ -103,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen>{
     }
   }
 
+
   //Notification FCM
   void firebaseCloudMessaging_Listeners() {
     if (Platform.isIOS) iOS_Permission();
@@ -142,23 +147,26 @@ class _HomeScreenState extends State<HomeScreen>{
         length: 5,
         child: new Scaffold(
           body: TabBarView(
+            controller: _tabController,
             physics: NeverScrollableScrollPhysics(),
             children: [
+              MyProfileScreen(user: myuser, auth: widget.auth, tabBarController: _tabController),
               MyPronosticsScreen(auth: widget.auth),
-              new Container(
-                color: Colors.yellowAccent,
-              ),
+              MyFantasyScreen(user: myuser,),
               new Container(
                 color: Colors.orange,
               ),
               ResultsScreen(user: myuser, auth: widget.auth),
-              MyProfileScreen(user: myuser, auth: widget.auth),
             ],
           ),
           bottomNavigationBar: new TabBar(
+            controller: _tabController,
               tabs: [
                 Tab(
                   icon: new Icon(Icons.home, size: 30,),
+                ),
+                Tab(
+                  icon: new Icon(Icons.fastfood, size: 30,),
                 ),
                 Tab(
                   icon: new Icon(Icons.videogame_asset, size: 30,),
@@ -168,9 +176,6 @@ class _HomeScreenState extends State<HomeScreen>{
                 ),
                 Tab(
                   icon: new Icon(Icons.whatshot, size: 30,),
-                ),
-                Tab(
-                  icon: new Icon(Icons.fastfood, size: 30,),
                 ),
               ],
               labelColor: Colors.deepOrange,
