@@ -1,3 +1,4 @@
+import 'package:bricktime/screens/ranking_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:bricktime/auth/authEmail.dart';
 import 'package:bricktime/screens/my_pronostics_screen.dart';
@@ -28,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen>  with TickerProviderStateMixin{
   final User myuser = User(id: 'id', pseudo: 'pseudo', level: 'level', lastConnexion: 'lastConnexion');
   final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
   TabController _tabController;
-  
+
   String playoffYear;
   ListModel listModel;
   bool showOnlyPending = false;
