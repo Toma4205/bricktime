@@ -61,11 +61,11 @@ Future<String> getUserPseudo(String id){
       .child("infos")
       .once()
       .then((DataSnapshot snapshot){
-        print('first snap '+snapshot.value.toString());
+
         if(snapshot.value != null){
           completer.complete(snapshot.value['pseudo']);
+          print('getPseudo : '+snapshot.value['pseudo']);
         }
-    //print('getPseudo : '+snapshot.value['pseudo']);
   });
   return completer.future;
 }

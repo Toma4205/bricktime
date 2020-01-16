@@ -55,6 +55,7 @@ flutter:
   assets:
     - images/birds.jpg
     - images/avatar
+    - images/bballhalfcourt
     - images/teams_logo/ahawks.png
     - images/teams_logo/bceltics.png
     - images/teams_logo/bnets.png

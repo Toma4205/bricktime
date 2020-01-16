@@ -11,6 +11,7 @@ import 'package:bricktime/model/player.dart';
 import 'package:bricktime/dbase/user_actions.dart';
 import 'package:bricktime/model/bid.dart';
 import 'package:bricktime/screens/home_screen.dart';
+import 'package:bricktime/screens/locker_room_screen.dart';
 import 'dart:math';
 
 
@@ -26,6 +27,7 @@ class MyFantasyScreen extends StatefulWidget {
 class _MyFantasyScreenState extends State<MyFantasyScreen> {
 
   String actual_fantasy_id;
+  String fantasy_name="";
   final snackBar = SnackBar(content: Text('Code copied ✅'));
   String filter_team=null;
   String filter_positions=null;
@@ -58,6 +60,11 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
     super.initState();
     print('initState MFS');
     initValues();
+    getFantasyName(MOD_current_fantasy_id).then((String name){
+      setState(() {
+        fantasy_name = name;
+      });
+    });
   }
 
   void initValues(){
@@ -296,10 +303,9 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
                     if(last_id == null){ //Ce n'est pas le dernier
                       updateUserFantasyStatus(widget.user.id, MOD_current_fantasy_id, 'Auction closed');
                     }else if(last_id == widget.user.id){ //C'est le dernier
-                      /*await auctionResolution(MOD_current_fantasy_id).then((result){
-                        print('refresh');
-                      });*/
+
                       //Création du championnat
+                      await initFantasyPostDraft(MOD_current_fantasy_id);
 
                       updateAllUserFantasyStatus(MOD_current_fantasy_id, "Playing");
                       updateFantasyStatus(MOD_current_fantasy_id, "Playing");
@@ -535,10 +541,7 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
         body: TabBarView(
           controller: _fantasyTabController,
           children: [
-            new Container(
-              color: Colors.yellowAccent,
-              child: Center(child: Text(MOD_current_fantasy_id),),
-            ),
+            LockerRoomScreen(user: widget.user, fantasy_name: fantasy_name),
             new Container(
               color: Colors.orange,
             ),
@@ -618,7 +621,7 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
       color: Colors.black,
       child: Column(
         children: <Widget>[
-          _buildTitle(Icons.supervised_user_circle, "Draft Players", 'fantasy name', Colors.black, Colors.deepOrange),
+          _buildTitle(Icons.supervised_user_circle, "Draft Players", fantasy_name, Colors.black, Colors.deepOrange),
           display_mode == "draft" ? _buildFilters() : Container(padding: EdgeInsets.all(0),),
           _buildCounters(Colors.white),
           Divider(color: Colors.white, thickness: 2, height: 5,),
@@ -630,7 +633,7 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
       color: Colors.black,
       child: Column(
         children: <Widget>[
-          _buildTitle(Icons.supervised_user_circle, "Draft Players", 'fantasy name', Colors.black, Colors.deepOrange),
+          _buildTitle(Icons.supervised_user_circle, "Draft Players", fantasy_name, Colors.black, Colors.deepOrange),
           Padding(padding: EdgeInsets.symmetric(vertical: 20),),
           _buildDraftWaitingRoom(),
           //Center(
@@ -855,7 +858,7 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
             shrinkWrap: false,
             //mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              _buildTitle(Icons.add_shopping_cart, "Squad Auction", 'fantasy name', Colors.orange, Colors.white),
+              _buildTitle(Icons.add_shopping_cart, "Squad Auction", fantasy_name, Colors.orange, Colors.white),
               _buildAuctionsResultsList(),
               Padding(padding: EdgeInsets.symmetric(vertical: 2),),
               _buildSquadList(display_mode),

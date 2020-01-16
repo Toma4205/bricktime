@@ -2,6 +2,10 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:bricktime/model/user.dart';
 import 'package:bricktime/model/player.dart';
 import 'package:bricktime/model/bid.dart';
+import 'package:bricktime/model/squad.dart';
+import 'package:bricktime/model/confrontation.dart';
+import 'package:bricktime/dbase/constantes_actions.dart';
+import 'package:bricktime/dbase/user_actions.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -106,17 +110,17 @@ Future<String> joinFantasyWithCodeForUser(String user_id, String fantasy_code, S
 
 removeFantasyCompetitionAllUsers(String fantasy_id) async {
   await getPlayersFromFantasy(fantasy_id).then((playersList){
-    playersList.forEach((playerId){
-      removeFantasyCompetitionForUser(playerId, fantasy_id);
+    playersList.forEach((player){
+      removeFantasyCompetitionForUser(player.id, fantasy_id);
     });
   }).then((message){
     removeFantasyCompetition(fantasy_id);
   });
 }
 
-Future<List<String>> getPlayersFromFantasy(String fantasy_id){
-  Completer<List<String>> completer = new Completer<List<String>>();
-  List<String> playersList = new List();
+Future<List<User>> getPlayersFromFantasy(String fantasy_id){
+  Completer<List<User>> completer = new Completer<List<User>>();
+  List<User> playersList = new List();
 
   FirebaseDatabase.instance
       .reference()
@@ -128,7 +132,11 @@ Future<List<String>> getPlayersFromFantasy(String fantasy_id){
 
     Map<dynamic, dynamic> snapPlayers = snapshot.value;
     snapPlayers.forEach((key, value){
-      playersList.add(key.toString());
+      playersList.add(new User(
+        id: key.toString(),
+        pseudo: value['name'],
+      )
+      );
     });
     completer.complete(playersList);
 
@@ -243,7 +251,8 @@ updateAllUserFantasyStatus(String fantasy_id, String status){
 
     Map<dynamic, dynamic> snapFantasy = snapshot.value;
     snapFantasy.forEach((key, value) {
-        if(value['status'] != 'Auction closed'){
+        print(value['status'].toString()+" "+status);
+        if(value['status'] != 'Auction closed' || status == 'Playing'){
           updateUserFantasyStatus(key, fantasy_id, status);
         }
       });
@@ -373,10 +382,12 @@ Future auctionResolution(String fantasy_id) async {
         Map<dynamic, dynamic> snapAuctions = snapshot.value;
         snapAuctions.forEach((key, value){
           Map<dynamic, dynamic> snapAuctionsPlayer = value;
+          print('debut :: '+snapAuctionsPlayer.keys.toString());
           if(!snapAuctionsPlayer.keys.contains('resolved')){
             if(snapAuctionsPlayer.length==4){
+
               String owner_id = snapAuctionsPlayer.keys.firstWhere((owner) => owner.toString().length > 16);
-              buyPlayer(fantasy_id, owner_id, key.toString(), snapAuctionsPlayer.values.elementAt(0)['auction'], snapAuctionsPlayer['position'].toString(), snapAuctionsPlayer['name'].toString(), snapAuctionsPlayer['team_id'].toString());
+              buyPlayer(fantasy_id, owner_id, key.toString(), snapAuctionsPlayer.values.elementAt(snapAuctionsPlayer.values.toList().indexWhere((key){return (key.toString().length > 20);}))['auction'], snapAuctionsPlayer['position'].toString(), snapAuctionsPlayer['name'].toString(), snapAuctionsPlayer['team_id'].toString());
               setAuctionStatus(fantasy_id, owner_id, key.toString(), "won");
 
             }else{
@@ -389,8 +400,6 @@ Future auctionResolution(String fantasy_id) async {
 
                   setAuctionStatus(fantasy_id, keyPlayer, key.toString(), "lost");
 
-                  print('double auction : '+key.toString());
-                  print('if : '+DateTime.parse(valuePlayer['auction_date']).toString()+' is before '+auction_time.toString()+' : '+DateTime.parse(valuePlayer['auction_date']).isBefore(auction_time).toString());
                   if((int.parse(valuePlayer['auction'].toString()) > highestBid) || ((int.parse(valuePlayer['auction'].toString()) == highestBid) && DateTime.parse(valuePlayer['auction_date']).isBefore(auction_time))) {
                     auction_time = DateTime.parse(valuePlayer['auction_date']);
                     highestBid = valuePlayer['auction'];
@@ -415,6 +424,24 @@ setAuctionResolved(String fantasy_id, String player_id){
       {
         'resolved': true,
       });
+}
+
+Future<String> getFantasyName(String fantasy_id){
+  Completer<String> completer = new Completer<String>();
+  String name ;
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("fantasy")
+      .child(fantasy_id)
+      .once()
+      .then((DataSnapshot snapshot) {
+
+    name = snapshot.value['fantasy_name'];
+
+    completer.complete(name);
+  });
+  return completer.future;
 }
 
 Future<List<Bid>> getWaitingAuctionSquad(String user_id, String fantasy_id){
@@ -466,6 +493,346 @@ Future<int> getBudget(String user_id, String fantasy_id){
         budget = snapshot.value['budget'];
 
     completer.complete(budget);
+  });
+  return completer.future;
+}
+
+
+Future initFantasyPostDraft(String fantasy_id){
+  print("initFantasyPostDraft");
+
+  getPlayersFromFantasy(fantasy_id).then((List<User> players){
+    int nb_week_to_play = (players.length-1)*2;
+    int matchup_per_week = (players.length/2).round();
+
+    List<List<Confrontation>> all_weeks_matchup = new List();
+
+    List<int> matrix = new List();
+    for(int a=0; a<players.length; a++){
+      matrix.add(a);
+    }
+
+    DateTime nextMonday = getNextMondayFromNow();
+
+    getRealNBAStartDate().then((String startDate){
+
+      //Borne le lundi à un date postérieure à la date de début de saison officielle
+      if(nextMonday.isBefore(DateTime.parse(startDate))){
+        nextMonday = DateTime.parse(startDate);
+      }
+
+      DateTime next_monday_post_season = nextMonday.add(Duration(days: (nb_week_to_play+1)*7));
+
+      getRealNBAEndDate().then((String date){
+
+        //Borne la saison au lundi qui précède la date de fin de saison officielle
+        if(next_monday_post_season.isAfter(DateTime.parse(date))){
+          nb_week_to_play = (DateTime.parse(date).difference(nextMonday).inDays/7).round();
+        }
+
+        bool week_is_pair = true;
+        for(int i=0; i<nb_week_to_play; i++){
+          nextMonday = nextMonday.add(Duration(days: 7*i));
+
+          List<Confrontation> week_matchup = new List();
+
+          for(int j=0; j<matchup_per_week; j++){
+            if(week_is_pair){
+              week_matchup.add(new Confrontation(
+                start_date_time: nextMonday,
+                domicile: players.elementAt(matrix.elementAt(j)).id,
+                exterieur: players.elementAt(matrix.elementAt(matrix.length-1-j)).id,
+              ));
+            }else{
+              week_matchup.add(new Confrontation(
+                start_date_time: nextMonday,
+                domicile: players.elementAt(matrix.elementAt(matrix.length-1-j)).id,
+                exterieur: players.elementAt(matrix.elementAt(j)).id,
+              ));
+            }
+          }
+          all_weeks_matchup.add(week_matchup);
+          week_is_pair = !week_is_pair;
+
+          for(int x=0; x<matrix.length; x++){
+            x != 0 ? matrix.elementAt(x)+1 > players.length-1 ? matrix[x] = 1 : matrix[x] +=1 : null;
+          }
+        }
+
+        //
+        //ECRITURE DU CALENDRIER DES RENCONTRES EN BASE
+        //
+        all_weeks_matchup.forEach((List<Confrontation> wmp){
+          wmp.forEach((Confrontation mp){
+
+            String weekLabel = "week"+mp.start_date_time.year.toString()+(mp.start_date_time.month<10 ? "0":"")+mp.start_date_time.month.toString()+(mp.start_date_time.day<10 ? "0":"")+mp.start_date_time.day.toString();
+            // L'id d'un match est la concaténation des id users domicile et extérieur
+            FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("calendar").child(weekLabel).child(mp.domicile+mp.exterieur).update(
+                {
+                  'home': mp.domicile,
+                  'away': mp.exterieur,
+                  'status': 'not played',
+                });
+          });
+        });
+
+      });
+    });
+
+  });
+}
+
+//Renvoie le lundi suivant (si on est dimanche il renvoie le lundi dans 8 jours)
+DateTime getNextMondayFromNow() {
+  var year = DateTime.now().year;
+  var month = DateTime.now().month;
+  var day = DateTime.now().day;
+
+  var d = new DateTime(year,month,day);
+
+  int diff = d.weekday == 7 ? 8 : 7-d.weekday+1;
+  DateTime next = d.add(Duration(days: diff));
+  return next;
+
+}
+
+//Renvoie la constante Next_Monday de la base de données
+Future<DateTime> getNextMonday(){
+  Completer<DateTime> completer = new Completer<DateTime>();
+  DateTime next_monday;
+
+  FirebaseDatabase.instance.reference().child("constantes").child('next_monday').once().then((DataSnapshot snapshot){
+    if(snapshot != null){
+
+      next_monday = DateTime.parse(snapshot.value);
+      completer.complete(next_monday);
+    }
+  });
+
+  return completer.future;
+
+}
+
+
+Future<Squad> getSquadData(String fantasy_id, String user_id){
+  Completer<Squad> completer = new Completer<Squad>();
+  Squad squad = new Squad();
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("fantasy")
+      .child(fantasy_id)
+      .child("players")
+      .child(user_id)
+      .once()
+      .then((DataSnapshot snapshot) {
+
+        if(snapshot != null){
+          Map<dynamic, dynamic> snapDataCompetition = snapshot.value;
+          if(snapDataCompetition.keys.contains('squad')){
+            squad.players = new List();
+            squad.starters = [null, null, null, null, null];
+            squad.subs = [null, null, null, null, null];
+            squad.waterboys = new List();
+            squad.minutes_per_position = [1, 1, 1, 1, 1];
+            squad.strategy_played = new List();
+
+            Map<dynamic, dynamic> snapSquad = snapDataCompetition['squad'];
+            snapSquad.forEach((key, value){
+              Player tmpPlayer = Player(
+                  short_name: value['name'],
+                  position: value['position'],
+                  teamId: value['team_id'],
+                  rotation: value['rotation'],
+                  num_poste: value['num_poste'],
+                  id: key,
+              );
+
+              squad.players.add(tmpPlayer);
+              switch(value['rotation']){
+                case 'starter': {
+                  squad.starters[value['num_poste']] = tmpPlayer;
+                  squad.minutes_per_position[value['num_poste']] = value['minute'];
+                }
+                break;
+
+                case 'sub': {
+                  squad.subs[value['num_poste']] = tmpPlayer;
+                }
+                break;
+
+                case 'waterboy': {
+                  squad.waterboys.add(tmpPlayer);
+                }
+                break;
+
+                default: {
+                  squad.waterboys.add(tmpPlayer);
+                }
+                break;
+              };
+            });
+
+            if(snapDataCompetition.keys.contains('used_strategies')){
+              Map<dynamic, dynamic> snapStrategies = snapDataCompetition['used_strategies'];
+              snapStrategies.forEach((key, value) {
+                if(value){
+                  squad.strategy_played.add(key);
+                }
+              });
+            }
+
+            squad.strategy_selected = snapDataCompetition['strategy_selected'].toString();
+            print(snapDataCompetition['game_plan'].toString());
+            squad.game_plan = snapDataCompetition['game_plan'] == null ? 'Classic' : snapDataCompetition['game_plan'].toString();
+
+          }
+        }
+
+    completer.complete(squad);
+  });
+  return completer.future;
+}
+
+
+updateSquad(String fantasy_id, String user_id, Squad squad){
+
+
+  if(squad.strategy_selected.toString() != "null"){
+    FirebaseDatabase.instance
+        .reference()
+        .child("fantasy")
+        .child(fantasy_id)
+        .child("players")
+        .child(user_id)
+        .once()
+        .then((DataSnapshot snapshot) {
+
+      if(snapshot != null){
+        Map<dynamic, dynamic> snapDataCompetition = snapshot.value;
+        if(snapDataCompetition.keys.contains("used_strategies")){
+          Map<dynamic, dynamic> snapStrategies = snapDataCompetition['used_strategies'];
+          if(!snapStrategies.keys.contains(squad.strategy_selected.toString())){
+            FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+                {
+                  'strategy_selected': squad.strategy_selected.toString(),
+                });
+          }
+        }
+      }
+    });
+  }else{
+    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+        {
+          'strategy_selected': squad.strategy_selected.toString(),
+        });
+  }
+
+
+  FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+      {
+        'game_plan': squad.game_plan.toString(),
+      });
+
+  squad.players.forEach((Player player){
+    int pos_starters = squad.starters.indexOf(player);
+    if(pos_starters >= 0){
+      FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
+          {
+            'num_poste': pos_starters,
+            'rotation': 'starter',
+            'minute': squad.minutes_per_position[pos_starters],
+
+          });
+    }else{
+
+      //pas starter , Test SUB ?
+      int pos_sub = squad.subs.indexOf(player);
+      if(pos_sub >= 0){
+        FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
+            {
+              'num_poste': pos_sub,
+              'rotation': 'sub',
+              'minute': null,
+
+            });
+      }else{
+        //pas starter, pas sub DONC WATERBOY
+        FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
+            {
+              'num_poste': null,
+              'rotation': 'waterboy',
+              'minute': null,
+
+            });
+      }
+    }
+  });
+}
+
+//Renvoie Null si aucun next game
+Future<DateTime> getNextGameDate(String fantasy_id){
+  Completer<DateTime> completer = new Completer<DateTime>();
+  DateTime nextGame = null;
+
+  getNextMonday().then((DateTime nextMonday){
+
+    print(nextMonday.toString());
+
+    String weekLabel = "week"+nextMonday.year.toString()+(nextMonday.month<10 ? "0":"")+nextMonday.month.toString()+(nextMonday.day<10 ? "0":"")+nextMonday.day.toString();
+
+    FirebaseDatabase.instance
+        .reference()
+        .child("fantasy")
+        .child(fantasy_id)
+        .child('calendar')
+        .once()
+        .then((DataSnapshot snapshot) {
+
+      Map<dynamic, dynamic> weeks = snapshot.value;
+      weeks.forEach((key, value){
+        if(key == weekLabel){
+          nextGame = DateTime.parse(weekLabel.substring(4));
+          completer.complete(nextMonday);
+        }
+      });
+    });
+  });
+
+  return completer.future;
+}
+
+Future<String> getNextContestant(String fantasy_id, String user_id, DateTime nextGame){
+  Completer<String> completer = new Completer<String>();
+  String nextContestant;// = null;
+  String weekLabel = "week"+nextGame.year.toString()+(nextGame.month<10 ? "0":"")+nextGame.month.toString()+(nextGame.day<10 ? "0":"")+nextGame.day.toString();
+  
+  FirebaseDatabase.instance
+      .reference()
+      .child("fantasy")
+      .child(fantasy_id)
+      .child('calendar')
+      .child(weekLabel)
+      .once()
+      .then((DataSnapshot snapshot) {
+
+    Map<dynamic, dynamic> confrontations = snapshot.value;
+    confrontations.forEach((key, value){
+      if(key.toString().contains(user_id)){
+        print(key.toString()+" is in "+user_id);
+
+        if(value['home'] == user_id){
+          getUserPseudo(value['away']).then((String pseudo){
+            completer.complete(pseudo);
+          });
+        }else if(value['away'] == user_id){
+          getUserPseudo(value['home']).then((String pseudo){
+            completer.complete(pseudo);
+          });
+        }
+      }
+    });
+
   });
   return completer.future;
 }

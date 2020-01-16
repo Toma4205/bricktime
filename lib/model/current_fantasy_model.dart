@@ -43,3 +43,11 @@ List<String> MOD_positions =
   'F',
   'C'
 ];
+
+List<String> MOD_gameplan =
+[
+  'Classic',
+  'Tall Ball',
+  'Small Ball',
+  'Fast Break',
+];

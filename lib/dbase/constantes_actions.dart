@@ -33,6 +33,50 @@ setActualPlayoffYear(int year) {
       });
 }
 
+Future<String> getRealNBAStartDate() async {
+  Completer<String> completer = new Completer<String>();
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("constantes")
+      .once()
+      .then((DataSnapshot snapshot) {
+
+    String realNBAStartDate = snapshot.value['start_date'].toString() ;
+    completer.complete(realNBAStartDate);
+  });
+  return completer.future;
+}
+
+setRealNBAStartDate(DateTime date) {
+  FirebaseDatabase.instance.reference().child('constantes').update(
+      {
+        'start_date': date.toString(),
+      });
+}
+
+Future<String> getRealNBAEndDate() async {
+  Completer<String> completer = new Completer<String>();
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("constantes")
+      .once()
+      .then((DataSnapshot snapshot) {
+
+    String realNBAEndDate = snapshot.value['end_date'].toString() ;
+    completer.complete(realNBAEndDate);
+  });
+  return completer.future;
+}
+
+setRealNBAEndDate(DateTime date) {
+  FirebaseDatabase.instance.reference().child('constantes').update(
+      {
+        'end_date': date.toString(),
+      });
+}
+
 Future<String> getAdminId() async {
   Completer<String> completer = new Completer<String>();
 
