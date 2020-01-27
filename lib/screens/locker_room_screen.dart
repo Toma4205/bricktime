@@ -28,7 +28,9 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
   String selectedSub = null;
 
   Duration nextGame = null;
+  DateTime nextMonday = null;
   String nextMatchupName = 'unknown';
+  List<Player> selectable_for_bonus;
 
   //A Stream depuis Firebase pour Init "available"
   Map<String, dynamic> strategyStatus = {
@@ -103,11 +105,19 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
     int deja_starter = squad.starters.indexWhere((Player p){
       return p == player;
     });
+
     if(deja_starter >= 0){
+      if(player.id == squad.id_bonus_player){
+        setState(() {
+          squad.id_bonus_player = null;
+          squad.num_poste_bonus_player = null;
+        });
+      }
+
       setState(() {
         squad.starters[deja_starter] = null;
-
       });
+
     }else{
       int deja_sub = squad.subs.indexWhere((Player p){
         return p == player;
@@ -123,7 +133,7 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
 
   _displayDialogAddStarterPlayer(BuildContext context, int position, String pos_name) async {
     String poste = "";
-    switch(pos_name) {
+    switch(pos_name.substring(0,1)) {
       case 'G': {
         poste = "GUARD";
       }
@@ -180,7 +190,7 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                         child:  ListView.builder(
                                   itemCount: squad.players.length,
                                   itemBuilder: (BuildContext context, int index) {
-                                    if(squad.players.elementAt(index).position == poste.substring(0,1)){
+                                    if(squad.players.elementAt(index).position.substring(0,1) == poste.substring(0,1)){
                                       return Container(
                                         padding: EdgeInsets.symmetric(vertical: 5),
                                         child: RaisedButton(
@@ -199,6 +209,14 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                                           ),
                                           onPressed: (){
                                             setState(() {
+                                              if(squad.starters[position] != null ){
+                                                if(squad.starters[position].id == squad.id_bonus_player){
+                                                  setState(() {
+                                                    squad.id_bonus_player = null;
+                                                    squad.num_poste_bonus_player = null;
+                                                  });
+                                                }
+                                              }
                                               selectedIdStarter = squad.players.elementAt(index).id;
                                               remove_if_already_starter_sub(squad.players.elementAt(index));
                                               squad.starters[position] = squad.players.elementAt(index);
@@ -257,7 +275,7 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                         child:  ListView.builder(
                             itemCount: squad.players.length,
                             itemBuilder: (BuildContext context, int index) {
-                              if(squad.players.elementAt(index).id != selectedIdStarter && squad.players.elementAt(index).position == poste.substring(0,1)){
+                              if(squad.players.elementAt(index).id != selectedIdStarter && squad.players.elementAt(index).position.substring(0,1) == poste.substring(0,1)){
                                 return Container(
                                   padding: EdgeInsets.symmetric(vertical: 5),
                                   child: RaisedButton(
@@ -308,6 +326,8 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
       squad.minutes_per_position = [1, 1, 1, 1, 1];
       squad.strategy_selected = null;
       squad.waterboys.addAll(squad.players);
+      squad.id_bonus_player = null;
+      squad.num_poste_bonus_player = null;
     });
   }
 
@@ -322,28 +342,39 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
       squad.starters = [null, null, null, null, null];
       squad.subs = [null, null, null, null, null];
       squad.waterboys = new List();
+      squad.id_bonus_player = null;
+      squad.num_poste_bonus_player = null;
       squad.minutes_per_position = [1, 1, 1, 1, 1];
       squad.strategy_played = new List();
       squad.game_plan = 'Classic';
       squad.strategy_selected = null;
     });
 
+    initInfoSquad();
+    initInfoNextGame();
+
+  }
+
+  initInfoSquad(){
     getSquadData(MOD_current_fantasy_id, widget.user.id).then((Squad squadoo) async{
       setState(() {
         squad = squadoo;
       });
     });
+  }
 
+  initInfoNextGame(){
     getNextGameDate(MOD_current_fantasy_id).then((DateTime nxt) async{
       if(nxt != null){
 
         setState(() {
+          nextMonday = nxt;
           nextGame = nxt.difference(DateTime.now().toUtc());
         });
-         getNextContestant(MOD_current_fantasy_id, widget.user.id, nxt).then((String pseudo) async{
-           setState(() {
-             nextMatchupName = pseudo;
-           });
+        getNextContestant(MOD_current_fantasy_id, widget.user.id, nxt).then((String pseudo) async{
+          setState(() {
+            nextMatchupName = pseudo;
+          });
         });
 
       }else{
@@ -354,14 +385,33 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
       }
 
     });
+    print('next monday init = '+nextMonday.toString());
   }
+
+
 
   @override
   Widget build(BuildContext context) {
       if (squad == null) {
-        return new Center(child: new Text('Loading...'));
+        return Container(
+          color: Colors.orange,
+          padding: EdgeInsets.all(0),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: new AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        );
       }else if(squad.game_plan == null){
-        return new Center(child: new Text('Loading...'));
+        return Container(
+          color: Colors.orange,
+          padding: EdgeInsets.all(0),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: new AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        );
       }else{
         String waterboys_string ="";
         squad.players.forEach((Player player){
@@ -412,6 +462,7 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
+                      _buildStreamNextGameInfo(),
                       Text('Next Game in '+(nextGame == null ? "DD:HH:MM" : (nextGame.inHours/24).floor().toString()+" days "+(nextGame.inHours%24).floor().toString()+" hours "+(nextGame.inMinutes%60).toString())+" min", style: TextStyle(color: Colors.white, fontSize: 15),),
                       Text('vs '+nextMatchupName.toString(), style: TextStyle(color: Colors.white, fontSize: 15), overflow: TextOverflow.ellipsis,),
                     ],
@@ -558,6 +609,8 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                           IconButton(padding: EdgeInsets.symmetric(vertical: 2), icon: Icon(Icons.history, color: !squad.strategy_played.contains("T-Mac's Comeback") ? squad.strategy_selected == "T-Mac's Comeback" ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("T-Mac's Comeback")){
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected = squad.strategy_selected == "T-Mac's Comeback"  ? null : "T-Mac's Comeback";
 
 
@@ -566,9 +619,11 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                               null;
                             }
                           }),
-                          IconButton(padding: EdgeInsets.symmetric(vertical: 2),icon: Icon(Icons.looks_5, color: !squad.strategy_played.contains("Draymond's Nut Kick") ? squad.strategy_selected == "Draymond's Nut Kick" ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
+                          IconButton(padding: EdgeInsets.symmetric(vertical: 2),icon: Icon(Icons.toll, color: !squad.strategy_played.contains("Draymond's Nut Kick") ? squad.strategy_selected == "Draymond's Nut Kick" ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("Draymond's Nut Kick")) {
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected =
                                 squad.strategy_selected == "Draymond's Nut Kick"
                                     ? null
@@ -581,6 +636,8 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                           IconButton(padding: EdgeInsets.symmetric(vertical: 2),icon: Icon(Icons.hearing, color: !squad.strategy_played.contains('Snitch') ? squad.strategy_selected == 'Snitch' ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("Snitch")) {
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected =
                                 squad.strategy_selected == 'Snitch'
                                     ? null
@@ -593,6 +650,8 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                           IconButton(padding: EdgeInsets.symmetric(vertical: 2),icon: Icon(Icons.security, color: !squad.strategy_played.contains("Jordan Rules") ? squad.strategy_selected == 'Jordan Rules' ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("Jordan Rules")) {
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected =
                                 squad.strategy_selected == 'Jordan Rules'
                                     ? null
@@ -613,6 +672,8 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                           IconButton(padding: EdgeInsets.symmetric(vertical: 2),icon: Icon(Icons.healing, color: !squad.strategy_played.contains('Malice at the Palace') ? squad.strategy_selected == 'Malice at the Palace' ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("Malice at the Palace")) {
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected =
                                 squad.strategy_selected ==
                                     'Malice at the Palace'
@@ -623,9 +684,11 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                               null;
                             }
                           }),
-                          IconButton(padding: EdgeInsets.symmetric(vertical: 2), icon: Icon(Icons.whatshot, color: !squad.strategy_played.contains("Michael's Secret Stuff") ? squad.strategy_selected == "Michael's Secret Stuff" ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
+                          IconButton(padding: EdgeInsets.symmetric(vertical: 2), icon: Icon(Icons.local_drink, color: !squad.strategy_played.contains("Michael's Secret Stuff") ? squad.strategy_selected == "Michael's Secret Stuff" ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("Michael's Secret Stuff")) {
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected =
                                 squad.strategy_selected ==
                                     "Michael's Secret Stuff"
@@ -639,6 +702,8 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                           IconButton(padding: EdgeInsets.symmetric(vertical: 2),icon: Icon(Icons.pause_circle_outline, color: !squad.strategy_played.contains("Surprise Load Management") ? squad.strategy_selected == "Surprise Load Management" ? Colors.white : Colors.black : Colors.blueGrey, size: 30,), onPressed: (){
                             if(!squad.strategy_played.contains("Surprise Load Management")) {
                               setState(() {
+                                squad.id_bonus_player = null;
+                                squad.num_poste_bonus_player = null;
                                 squad.strategy_selected =
                                 squad.strategy_selected ==
                                     "Surprise Load Management"
@@ -662,6 +727,45 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                                 Text(squad.strategy_selected.toString()+": ", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold), overflow: TextOverflow.clip, textAlign: TextAlign.justify,),
                                 Text(strategyStatus[squad.strategy_selected.toString()]['description'], style: TextStyle(color: Colors.white, fontStyle: FontStyle.italic,), overflow: TextOverflow.clip, textAlign: TextAlign.center,),
                               ],
+                            ),
+                          ),
+                        ],
+                      ): Container(padding: EdgeInsets.all(0)),
+                      squad.strategy_selected.toString() ==  "Malice at the Palace" || squad.strategy_selected.toString() ==  "Michael's Secret Stuff" ?
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Container(
+                            //color: Colors.orange,
+                            padding: EdgeInsets.symmetric(vertical: 5),
+                            width: (MediaQuery.of(context).size.width*0.8),
+                            child: DropdownButtonFormField(
+                              decoration: InputDecoration(
+                                  hintText: "Pick a starter",
+                                  filled: true,
+                                  prefixIcon: Icon(squad.strategy_selected.toString() == "Malice at the Palace" ? Icons.healing: Icons.local_drink),
+                                  contentPadding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 5),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  fillColor: Colors.white
+                              ),
+                              items: squad.starters.where((player){
+                                return player != null;
+                              }).map((player) => DropdownMenuItem(
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  child: Text(player.short_name, style: TextStyle(fontSize: 14,), textAlign: TextAlign.center,),
+                                ),
+                                value:  player.id,)
+                              ).toList(),
+                              onChanged: (value){
+                                setState(() {
+                                  squad.id_bonus_player = value ;
+                                  squad.num_poste_bonus_player = squad.players.elementAt(squad.players.indexWhere((element){
+                                    return element.id ==  value;
+                                  })).num_poste;
+                                });
+                              },
+                              value: squad.id_bonus_player == null ? null : squad.id_bonus_player,
                             ),
                           ),
                         ],
@@ -760,6 +864,7 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
                 ),
                 onPressed: (){
                   print("save");
+                  print(squad.strategy_selected.toString());
                   updateSquad(MOD_current_fantasy_id, widget.user.id, squad);
 
 
@@ -774,6 +879,52 @@ class _LockerRoomScreenState extends State<LockerRoomScreen> {
       );
     }
   }
+
+  Widget _buildStreamNextGameInfo(){
+    if(nextMonday != null){
+      return StreamBuilder(
+          stream: FirebaseDatabase.instance
+              .reference()
+              .child("constantes")
+              .child("next_monday")
+              .onValue,
+          builder: (BuildContext context, AsyncSnapshot<Event> event) {
+            if (!event.hasData) {
+              return Container(
+                color: Colors.orange,
+                padding: EdgeInsets.all(0),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              );
+            }
+
+            if(event.data.snapshot.value.toString() == "null") {
+              return Container(
+                color: Colors.orange,
+                padding: EdgeInsets.all(0),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: new AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              );
+            } else{
+              if(event.data.snapshot.value.toString() != nextMonday.toIso8601String()){
+                print("NEW next Monday");
+                initInfoNextGame();
+                initInfoSquad();
+              }
+              return Container(padding: EdgeInsets.all(0),);
+            }
+          });
+    }else{
+      return Container(padding: EdgeInsets.all(0),);
+    }
+  }
+
 
   Widget _buildSliderMinute(int position){
    return Row(

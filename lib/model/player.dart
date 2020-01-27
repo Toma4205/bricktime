@@ -23,6 +23,11 @@ class Player {
   final List<PlayerFantasyGameStats> list_games_fantasy_stats;
   final PlayerRealGameStats last_game_real_stats;
   final PlayerFantasyGameStats last_game_fantasy_stats;
+  int realPoints;
+  int virtualPoints;
+  Widget first_bonus_impacted;
+  Widget second_bonus_impacted;
+  bool conf_won;
 
-  Player({this.id, this.first_name, this.last_name, this.short_name, this.teamId, this.teamAbrev, this.teamCity, this.teamName, this.teamConf, this.position, this.num_poste, this.rotation, this.minute, this.price, this.owner, this.list_games_real_stats, this.list_games_fantasy_stats, this.last_game_real_stats, this.last_game_fantasy_stats});
+  Player({this.id, this.first_name, this.last_name, this.short_name, this.teamId, this.teamAbrev, this.teamCity, this.teamName, this.teamConf, this.position, this.num_poste, this.rotation, this.minute, this.price, this.owner, this.list_games_real_stats, this.list_games_fantasy_stats, this.last_game_real_stats, this.last_game_fantasy_stats, this.realPoints, this.virtualPoints, this.first_bonus_impacted, this.second_bonus_impacted, this.conf_won});
 }

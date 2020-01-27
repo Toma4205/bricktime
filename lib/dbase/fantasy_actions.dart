@@ -541,13 +541,17 @@ Future initFantasyPostDraft(String fantasy_id){
               week_matchup.add(new Confrontation(
                 start_date_time: nextMonday,
                 domicile: players.elementAt(matrix.elementAt(j)).id,
+                domicile_name: players.elementAt(matrix.elementAt(j)).pseudo,
                 exterieur: players.elementAt(matrix.elementAt(matrix.length-1-j)).id,
+                exterieur_name: players.elementAt(matrix.elementAt(matrix.length-1-j)).pseudo,
               ));
             }else{
               week_matchup.add(new Confrontation(
                 start_date_time: nextMonday,
                 domicile: players.elementAt(matrix.elementAt(matrix.length-1-j)).id,
+                domicile_name: players.elementAt(matrix.elementAt(matrix.length-1-j)).pseudo,
                 exterieur: players.elementAt(matrix.elementAt(j)).id,
+                exterieur_name: players.elementAt(matrix.elementAt(j)).pseudo,
               ));
             }
           }
@@ -570,7 +574,9 @@ Future initFantasyPostDraft(String fantasy_id){
             FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("calendar").child(weekLabel).child(mp.domicile+mp.exterieur).update(
                 {
                   'home': mp.domicile,
+                  'home_name': mp.domicile_name,
                   'away': mp.exterieur,
+                  'away_name': mp.exterieur_name,
                   'status': 'not played',
                 });
           });
@@ -579,6 +585,7 @@ Future initFantasyPostDraft(String fantasy_id){
       });
     });
 
+    updateSquad(fantasy_id,null,null);
   });
 }
 
@@ -683,7 +690,8 @@ Future<Squad> getSquadData(String fantasy_id, String user_id){
             }
 
             squad.strategy_selected = snapDataCompetition['strategy_selected'].toString();
-            print(snapDataCompetition['game_plan'].toString());
+            squad.id_bonus_player = snapDataCompetition['bonus_player'].toString();
+            squad.num_poste_bonus_player = snapDataCompetition['num_poste_bonus_player'].toString() == "null" ? null : int.parse(snapDataCompetition['num_poste_bonus_player'].toString());
             squad.game_plan = snapDataCompetition['game_plan'] == null ? 'Classic' : snapDataCompetition['game_plan'].toString();
 
           }
@@ -697,77 +705,204 @@ Future<Squad> getSquadData(String fantasy_id, String user_id){
 
 updateSquad(String fantasy_id, String user_id, Squad squad){
 
-
-  if(squad.strategy_selected.toString() != "null"){
+  //Si null alors c'est l'init post Draft (pour qu'une équipe soit pré-remplie
+  if(user_id == null || squad == null){
     FirebaseDatabase.instance
         .reference()
         .child("fantasy")
         .child(fantasy_id)
         .child("players")
-        .child(user_id)
         .once()
         .then((DataSnapshot snapshot) {
 
       if(snapshot != null){
-        Map<dynamic, dynamic> snapDataCompetition = snapshot.value;
-        if(snapDataCompetition.keys.contains("used_strategies")){
-          Map<dynamic, dynamic> snapStrategies = snapDataCompetition['used_strategies'];
-          if(!snapStrategies.keys.contains(squad.strategy_selected.toString())){
-            FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
-                {
-                  'strategy_selected': squad.strategy_selected.toString(),
-                });
-          }
-        }
+        Map<dynamic, dynamic> snapDataPlayers = snapshot.value;
+        snapDataPlayers.forEach((keyPlayer, valuePlayer){
+          FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).update(
+              {
+                'game_plan': "Classic",
+                'strategy_selected': "null",
+                'bonus_player': "null",
+                'num_poste_bonus_player': "null",
+              });
+
+          Map<dynamic, dynamic> snapDataSquad = valuePlayer['squad'];
+          bool initC = false;
+          bool initF1 = false;
+          bool initF2 = false;
+          bool initG1 = false;
+          bool initG2 = false;
+
+          snapDataSquad.forEach((keySquad, valueSquad){
+              switch(valueSquad['position'].toString().substring(0,1)){
+                case 'C': {
+                  if(initC){
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "rotation": "waterboy",
+                        });
+                  }else{
+                    initC = true;
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "num_poste": 4,
+                          "minute": 0,
+                          "rotation": "starter",
+                        });
+                  }
+                }
+                break;
+                case 'F': {
+                  if(initF1 && initF2){
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "rotation": "waterboy",
+                        });
+                  }else if(initF1){
+                    initF2 = true;
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "num_poste": 3,
+                          "minute": 0,
+                          "rotation": "starter",
+                        });
+
+                  }else{
+                    initF1 = true;
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "num_poste": 2,
+                          "minute": 0,
+                          "rotation": "starter",
+                        });
+                  }
+                }
+                break;
+                case 'G': {
+                  if(initG1 && initG2){
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "rotation": "waterboy",
+                        });
+
+                  }else if(initG1){
+                    initG2 = true;
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "num_poste": 1,
+                          "minute": 0,
+                          "rotation": "starter",
+                        });
+
+                  }else{
+                    initG1 = true;
+                    FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(keyPlayer).child("squad").child(keySquad).update(
+                        {
+                          "num_poste": 0,
+                          "minute": 0,
+                          "rotation": "starter",
+                        });
+                  }
+                }
+                break;
+              }
+          });
+        });
       }
     });
+
   }else{
+    print("Function update Squad ");
+    if(squad.strategy_selected.toString() != "null"){
+
+      FirebaseDatabase.instance
+          .reference()
+          .child("fantasy")
+          .child(fantasy_id)
+          .child("players")
+          .child(user_id)
+          .once()
+          .then((DataSnapshot snapshot) async{
+
+        if(snapshot != null){
+          Map<dynamic, dynamic> snapDataCompetition = snapshot.value;
+          if(snapDataCompetition.keys.contains("used_strategies")){
+            Map<dynamic, dynamic> snapStrategies = snapDataCompetition['used_strategies'];
+            if(!snapStrategies.keys.contains(squad.strategy_selected.toString())){
+              FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+                  {
+                    'strategy_selected': squad.strategy_selected.toString(),
+                    'bonus_player': squad.id_bonus_player.toString(),
+                    'num_poste_bonus_player' : squad.num_poste_bonus_player,
+                  });
+            }
+          }else{
+            FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+            {
+              'strategy_selected': squad.strategy_selected.toString(),
+              'bonus_player': squad.id_bonus_player.toString(),
+              'num_poste_bonus_player' : squad.num_poste_bonus_player,
+            });
+          }
+        }else{
+          FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+          {
+            'strategy_selected': squad.strategy_selected.toString(),
+            'bonus_player': squad.id_bonus_player.toString(),
+            'num_poste_bonus_player' : squad.num_poste_bonus_player,
+          });
+        }
+      });
+    }else{
+      FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
+          {
+            'strategy_selected': squad.strategy_selected.toString(),
+            'bonus_player': squad.id_bonus_player.toString(),
+            'num_poste_bonus_player' : squad.num_poste_bonus_player,
+          });
+    }
+
+
     FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
         {
-          'strategy_selected': squad.strategy_selected.toString(),
+          'game_plan': squad.game_plan.toString(),
         });
-  }
 
-
-  FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).update(
-      {
-        'game_plan': squad.game_plan.toString(),
-      });
-
-  squad.players.forEach((Player player){
-    int pos_starters = squad.starters.indexOf(player);
-    if(pos_starters >= 0){
-      FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
-          {
-            'num_poste': pos_starters,
-            'rotation': 'starter',
-            'minute': squad.minutes_per_position[pos_starters],
-
-          });
-    }else{
-
-      //pas starter , Test SUB ?
-      int pos_sub = squad.subs.indexOf(player);
-      if(pos_sub >= 0){
+    squad.players.forEach((Player player){
+      int pos_starters = squad.starters.indexOf(player);
+      if(pos_starters >= 0){
         FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
             {
-              'num_poste': pos_sub,
-              'rotation': 'sub',
-              'minute': null,
+              'num_poste': pos_starters,
+              'rotation': 'starter',
+              'minute': squad.minutes_per_position[pos_starters],
 
             });
       }else{
-        //pas starter, pas sub DONC WATERBOY
-        FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
-            {
-              'num_poste': null,
-              'rotation': 'waterboy',
-              'minute': null,
 
-            });
+        //pas starter , Test SUB ?
+        int pos_sub = squad.subs.indexOf(player);
+        if(pos_sub >= 0){
+          FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
+              {
+                'num_poste': pos_sub,
+                'rotation': 'sub',
+                'minute': squad.minutes_per_position[pos_sub],
+
+              });
+        }else{
+          //pas starter, pas sub DONC WATERBOY
+          FirebaseDatabase.instance.reference().child('fantasy').child(fantasy_id).child("players").child(user_id).child('squad').child(player.id).update(
+              {
+                'num_poste': null,
+                'rotation': 'waterboy',
+                'minute': null,
+
+              });
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 //Renvoie Null si aucun next game
@@ -793,10 +928,10 @@ Future<DateTime> getNextGameDate(String fantasy_id){
       weeks.forEach((key, value){
         if(key == weekLabel){
           nextGame = DateTime.parse(weekLabel.substring(4));
-          completer.complete(nextMonday);
         }
       });
     });
+    completer.complete(nextMonday);
   });
 
   return completer.future;
@@ -805,6 +940,7 @@ Future<DateTime> getNextGameDate(String fantasy_id){
 Future<String> getNextContestant(String fantasy_id, String user_id, DateTime nextGame){
   Completer<String> completer = new Completer<String>();
   String nextContestant;// = null;
+  print("next game : "+nextGame.toString());
   String weekLabel = "week"+nextGame.year.toString()+(nextGame.month<10 ? "0":"")+nextGame.month.toString()+(nextGame.day<10 ? "0":"")+nextGame.day.toString();
   
   FirebaseDatabase.instance
@@ -833,6 +969,29 @@ Future<String> getNextContestant(String fantasy_id, String user_id, DateTime nex
       }
     });
 
+  });
+  return completer.future;
+}
+
+Future<List<String>> getWeekLabels(String fantasy_id){
+  Completer<List> completer = new Completer<List<String>>();
+  List<String> weekLabels = List();
+
+  FirebaseDatabase.instance
+      .reference()
+      .child("fantasy")
+      .child(fantasy_id)
+      .child('calendar')
+      .once()
+      .then((DataSnapshot snapshot) {
+
+
+    Map<dynamic, dynamic> weeks = snapshot.value;
+    if(weeks != null){
+      weekLabels = List.from(weeks.keys);
+      weekLabels.sort((a, b) => a.compareTo(b));
+    }
+    completer.complete(weekLabels);
   });
   return completer.future;
 }

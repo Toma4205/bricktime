@@ -12,6 +12,8 @@ import 'package:bricktime/dbase/user_actions.dart';
 import 'package:bricktime/model/bid.dart';
 import 'package:bricktime/screens/home_screen.dart';
 import 'package:bricktime/screens/locker_room_screen.dart';
+import 'package:bricktime/screens/schedule_fantasy_screen.dart';
+import 'package:bricktime/screens/ranking_fantasy_screen.dart';
 import 'dart:math';
 
 
@@ -542,12 +544,8 @@ class _MyFantasyScreenState extends State<MyFantasyScreen> {
           controller: _fantasyTabController,
           children: [
             LockerRoomScreen(user: widget.user, fantasy_name: fantasy_name),
-            new Container(
-              color: Colors.orange,
-            ),
-            new Container(
-              color: Colors.pink,
-            ),
+            ScheduleFantasyScreen(user: widget.user, fantasy_name: fantasy_name),
+            RankingFantasyScreen(user: widget.user, fantasy_name: fantasy_name),
           ],
         ),
         bottomNavigationBar: new ColoredTabBar(
